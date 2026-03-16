@@ -66,7 +66,7 @@
 
 <script>
   // ⚠️ 請確保這是你最新部署的 /exec 連結
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbw4u0Yw1kV7-DRntlD6_6HdRfzdaiKC5uUpRU6Xi_IDUkxkVuI7IhfL3UXoDW3CfLah/exec";
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbyj9r8m_2Tt0cGbggA72xFtL6cFR2VXGKrRVUN7QefW1_mkewI2a0iuUKEWHssy0KEk/exec";
 
   const bookData = {
     "U1_P2": { img: "2.jpg", words: ["Eye", "Ear", "Nose", "Mouth", "Head"], sentences: ["My eye hurts."] },
@@ -86,8 +86,22 @@
     if (!text) return;
     window.speechSynthesis.cancel();
     const utt = new SpeechSynthesisUtterance(text);
+    
+    // 1. 強制設定語系標籤
     utt.lang = 'en-US'; 
     utt.rate = 0.85;
+
+    // 2. 核心修正：手動在瀏覽器清單中找真正的英文聲音
+    const voices = window.speechSynthesis.getVoices();
+    // 優先找 Google US English 或 Microsoft Zira 等英文人聲
+    const enVoice = voices.find(v => v.lang === 'en-US' && v.name.includes('Google')) || 
+                    voices.find(v => v.lang.includes('en-US')) || 
+                    voices.find(v => v.lang.includes('en'));
+    
+    if (enVoice) {
+      utt.voice = enVoice;
+    }
+    
     window.speechSynthesis.speak(utt);
   }
 
