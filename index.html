@@ -4,155 +4,181 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
-    body { font-family: 'Segoe UI', sans-serif; background: #FFF9E1; text-align: center; padding: 20px; margin: 0; }
-    .unit-card { background: white; border-radius: 20px; padding: 20px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-width: 350px; margin: 20px auto; position: relative; z-index: 1; }
-    .kiwi-img { width: 100px; height: 100px; transition: 0.3s; margin-bottom: 10px; cursor: pointer; border-radius: 50%; background: #FFE082; object-fit: contain; }
-    .btn-mic { display: block; width: 80%; margin: 20px auto; background: #FF5A5A; color: white; border: none; padding: 18px 0; border-radius: 50px; font-size: 20px; font-weight: bold; cursor: pointer; box-shadow: 0 6px #d32f2f; transition: 0.2s; -webkit-tap-highlight-color: transparent; }
-    .btn-mic:active { transform: translateY(3px); box-shadow: 0 2px #d32f2f; }
+    body { font-family: 'Segoe UI', sans-serif; background: #FFF9E1; text-align: center; padding: 15px; margin: 0; }
+    .unit-card { background: white; border-radius: 20px; padding: 15px; box-shadow: 0 5px 15px rgba(0,0,0,0.1); max-width: 400px; margin: 0 auto; }
+    
+    /* 電子書圖片區 */
+    .ebook-view { width: 100%; border-radius: 15px; border: 2px solid #FFE082; margin-bottom: 10px; overflow: hidden; position: relative; }
+    .ebook-img { width: 100%; display: block; }
+    
+    /* 點擊練習按鈕區 */
+    .practice-area { display: flex; flex-wrap: wrap; justify-content: center; gap: 8px; margin-bottom: 15px; }
+    .btn-sample { background: #EBF4FF; color: #4A90E2; border: 1px solid #4A90E2; padding: 8px 15px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; }
+    .btn-sample:active { background: #4A90E2; color: white; }
+
+    .kiwi-img { width: 80px; height: 80px; border-radius: 50%; background: #FFE082; margin-bottom: 10px; }
+    .btn-mic { display: block; width: 100%; background: #FF5A5A; color: white; border: none; padding: 15px 0; border-radius: 50px; font-size: 20px; font-weight: bold; box-shadow: 0 6px #d32f2f; cursor: pointer; }
     .btn-recording { background: #4CAF50 !important; box-shadow: 0 6px #388E3C !important; }
-    .star-display { font-size: 40px; color: #FFD700; height: 50px; margin: 10px 0; }
-    .target-sentence { font-size: 18px; color: #4A90E2; font-weight: bold; margin: 15px 0; background: #EBF4FF; padding: 12px; border-radius: 15px; }
-    .chat-container { text-align: left; margin-top: 15px; padding: 15px; background: #fdfdfd; border-radius: 15px; border: 1px dashed #ccc; }
-    .label { font-weight: bold; font-size: 12px; color: #999; margin-bottom: 5px; display: block; }
-    .student-text { color: #3498db; font-size: 18px; font-weight: 500; margin-bottom: 10px; min-height: 24px; border-bottom: 1px solid #eee; }
-    .kiwi-text { color: #e67e22; font-size: 16px; line-height: 1.4; min-height: 20px; }
-    #msg { color: #FF5A5A; font-size: 13px; margin: 15px 0; font-weight: bold; min-height: 18px; }
+    .target-sentence { font-size: 18px; color: #4A90E2; font-weight: bold; margin: 10px 0; min-height: 40px; }
+    .kiwi-text { color: #e67e22; font-size: 16px; min-height: 20px; margin-top: 10px; text-align: left; background: #f9f9f9; padding: 10px; border-radius: 10px; }
+    #msg { color: #FF5A5A; font-size: 12px; margin-top: 5px; }
   </style>
 </head>
 <body>
 
-  <div class="unit-card">
-    <img id="kiwi" class="kiwi-img" src="https://cdn-icons-png.flaticon.com/512/826/826913.png" onclick="repeatKiwi()">
-    <div id="stars" class="star-display"></div>
-    
-    <div class="target-sentence">挑戰句子：<br>"My eye hurts."</div>
-    
-    <div class="chat-container">
-      <span class="label">🎤 你說的是：</span>
-      <div id="display-text" class="student-text">...</div>
-      
-      <span class="label">👩‍🏫 Kiwi 老師說：</span>
-      <div id="feedback" class="kiwi-text">請按下方按鈕開始</div>
+<div class="unit-card">
+  <select id="unitSelect" style="width:100%; padding:10px; margin-bottom:10px; border-radius:10px;" onchange="loadPage()">
+    <option value="U1_P2">Unit 1 P.2 - What's the Matter?</option>
+    <option value="U1_P4">Unit 1 P.4 - I am a Doctor.</option>
+  </select>
+
+  <div class="ebook-view">
+    <img id="bookImg" class="ebook-img" src="2.jpg"> </div>
+
+  <div id="wordList" class="practice-area">
     </div>
 
-    <p id="msg">正在初始化...</p>
+  <div id="targetSentence" class="target-sentence">點擊上方單字開始練習</div>
+
+  <img class="kiwi-img" src="https://cdn-icons-png.flaticon.com/512/826/826913.png" onclick="repeatKiwi()">
+  <div id="feedback" class="kiwi-text">跟著 Kiwi 老師讀單字！</div>
+  
+  <p id="msg">等待指令...</p>
+  <button id="mainBtn" class="btn-mic" onclick="handleMicClick()">🎤 開始錄音挑戰</button>
+</div>
+
+<script>
+  const GAS_URL = "你的_GAS_URL_貼在這裡";
+
+  // 🌟 電子書資料庫
+  const bookData = {
+    "U1_P2": {
+      img: "2.jpg", // 記得確認 GitHub 上圖片檔名
+      words: ["Eye", "Ear", "Nose", "Mouth", "Hurts"],
+      sentences: ["My eye hurts.", "What's the matter?"]
+    },
+    "U1_P4": {
+      img: "4.jpg",
+      words: ["Doctor", "Nurse", "Patient"],
+      sentences: ["I am a doctor.", "You are a nurse."]
+    }
+  };
+
+  let currentTarget = "";
+
+  // 🌟 初始化頁面
+  function loadPage() {
+    const pageKey = document.getElementById('unitSelect').value;
+    const data = bookData[pageKey];
     
-    <button id="mainBtn" class="btn-mic" onclick="handleMicClick()">🎤 開始錄音</button>
-  </div>
+    // 換圖片
+    document.getElementById('bookImg').src = data.img;
+    
+    // 換單字按鈕
+    const listDiv = document.getElementById('wordList');
+    listDiv.innerHTML = ""; // 清空
+    
+    // 加入單字按鈕
+    data.words.forEach(w => {
+      let btn = document.createElement("button");
+      btn.className = "btn-sample";
+      btn.innerText = w;
+      btn.onclick = () => playSample(w, "word");
+      listDiv.appendChild(btn);
+    });
 
-  <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyiucIiJ_Bzi4z6Z2oQNUoMPWdaSVxGNtF0me01sVQGBuWqOy_O4ar3r8wq2gD4URM9/exec";
+    // 加入句子按鈕
+    data.sentences.forEach(s => {
+      let btn = document.createElement("button");
+      btn.className = "btn-sample";
+      btn.style.borderColor = "#FF5A5A"; // 句子用不同顏色區分
+      btn.innerText = "唸句子";
+      btn.onclick = () => playSample(s, "sentence");
+      listDiv.appendChild(btn);
+    });
+  }
 
-    async function requestMicrophoneEarly() {
-      try {
-        const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-        stream.getTracks().forEach(track => track.stop());
-        document.getElementById('msg').innerText = "準備就緒";
-      } catch (err) {
-        document.getElementById('msg').innerHTML = "請點擊網址旁『鎖頭』允許麥克風";
-      }
+  // 🌟 點擊發音
+  function playSample(text, type) {
+    currentTarget = text; // 設定當前 AI 要檢查的目標
+    document.getElementById('targetSentence').innerHTML = "跟著讀：<br>\"" + text + "\"";
+    
+    window.speechSynthesis.cancel();
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    utterance.rate = 0.7; // 慢速示範
+    window.speechSynthesis.speak(utterance);
+    
+    document.getElementById('msg').innerText = "聽完示範後，按下方錄音";
+  }
+
+  // --- 語音辨識與 GAS 通訊部分 ---
+  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  let recognition = new SpeechRecognition();
+  recognition.lang = 'en-US';
+
+  function handleMicClick() {
+    if (document.getElementById('mainBtn').innerText.includes("錄音")) {
+      startRecording();
+    } else {
+      recognition.stop();
     }
-    requestMicrophoneEarly();
+  }
 
-    const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
-    let recognition;
-    let isRecording = false;
+  function startRecording() {
+    document.getElementById('msg').innerText = "錄音中...請讀出：" + currentTarget;
+    recognition.start();
+  }
 
-    if (SpeechRecognition) {
-      recognition = new SpeechRecognition();
-      recognition.lang = 'en-US';
-      recognition.interimResults = false;
-      recognition.continuous = false;
-    }
+  recognition.onstart = () => {
+    document.getElementById('mainBtn').innerText = "🛑 停止";
+    document.getElementById('mainBtn').classList.add('btn-recording');
+  };
 
-    function speak(text) {
-      if (!text) return;
-      window.speechSynthesis.cancel();
-      const utterance = new SpeechSynthesisUtterance(text);
+  recognition.onend = () => {
+    document.getElementById('mainBtn').innerText = "🎤 開始錄音挑戰";
+    document.getElementById('mainBtn').classList.remove('btn-recording');
+  };
+
+  recognition.onresult = async (event) => {
+    const speechResult = event.results[0][0].transcript;
+    document.getElementById('msg').innerText = "Kiwi 老師正在聽你的發音...";
+    
+    // 🌟 發送到 GAS，讓 AI 針對 currentTarget (正確答案) 與 speechResult (學生讀的) 做比較
+    try {
+      const response = await fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify({
+          target: currentTarget, 
+          studentText: speechResult,
+          mode: "correction" // 告訴 AI 現在是糾音模式
+        })
+      });
+      const data = await response.json();
+      
+      const parts = data.feedback.split('|');
+      document.getElementById('feedback').innerText = parts[0] + "\n" + (parts[1] || "");
+      
+      // 只唸英文評語
+      const utterance = new SpeechSynthesisUtterance(parts[0]);
       utterance.lang = 'en-US';
-      utterance.pitch = 1.2;
-      utterance.rate = 0.85;
       window.speechSynthesis.speak(utterance);
+      
+    } catch (e) {
+      document.getElementById('msg').innerText = "連線失敗";
     }
+  };
 
-    function handleMicClick() {
-      if (!recognition) {
-        alert("此瀏覽器不支援語音功能");
-        return;
-      }
-      if (isRecording) {
-        recognition.stop();
-      } else {
-        startRecording();
-      }
-    }
+  function repeatKiwi() {
+    const text = document.getElementById('feedback').innerText.split('\n')[0];
+    const utterance = new SpeechSynthesisUtterance(text);
+    utterance.lang = 'en-US';
+    window.speechSynthesis.speak(utterance);
+  }
 
-    function startRecording() {
-      window.speechSynthesis.speak(new SpeechSynthesisUtterance(""));
-      document.getElementById('msg').innerText = "正在聽...";
-      document.getElementById('display-text').innerText = "...";
-      try {
-        recognition.start();
-      } catch (e) {
-        recognition.stop();
-        setTimeout(() => { recognition.start(); }, 250);
-      }
-    }
+  // 頁面載入後先跑一次
+  loadPage();
+</script>
 
-    if (recognition) {
-      recognition.onstart = () => {
-        isRecording = true;
-        const btn = document.getElementById('mainBtn');
-        btn.innerText = "🛑 停止錄音";
-        btn.classList.add('btn-recording');
-      };
-
-      recognition.onend = () => {
-        isRecording = false;
-        const btn = document.getElementById('mainBtn');
-        btn.innerText = "🎤 開始錄音";
-        btn.classList.remove('btn-recording');
-      };
-
-      recognition.onresult = async (event) => {
-        const text = event.results[0][0].transcript;
-        document.getElementById('display-text').innerText = text;
-        document.getElementById('msg').innerText = "Kiwi 老師批改中...";
-        
-        try {
-          const response = await fetch(GAS_URL, {
-            method: "POST",
-            body: JSON.stringify({ text: text, unit: "Body Parts" })
-          });
-          const data = await response.json();
-          
-          document.getElementById('msg').innerText = "評分完成";
-          document.getElementById('stars').innerText = "⭐".repeat(data.score || 0);
-
-          const fullFeedback = data.feedback || "";
-          if (fullFeedback.includes(" | ")) {
-            const parts = fullFeedback.split(" | ");
-            const englishPart = parts[0].trim();
-            const chinesePart = parts[1].trim();
-            document.getElementById('feedback').innerText = englishPart + "\n(" + chinesePart + ")";
-            speak(englishPart);
-          } else {
-            document.getElementById('feedback').innerText = fullFeedback;
-            speak(fullFeedback);
-          }
-        } catch (err) {
-          document.getElementById('msg').innerText = "連線失敗，請檢查網路";
-        }
-      };
-    } // <--- 補上這個原本漏掉的大括號
-
-    function repeatKiwi() {
-      const feedback = document.getElementById('feedback').innerText;
-      if (feedback && feedback !== "請按下方按鈕開始") {
-        const englishOnly = feedback.split('\n')[0].replace('(', '').trim();
-        speak(englishOnly);
-      }
-    }
-  </script>
 </body>
 </html>
