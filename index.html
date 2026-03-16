@@ -4,32 +4,30 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
-    /* 讓整個身體填滿視窗，不留白邊 */
     body { 
       font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
       background: #FFF9E1; 
       margin: 0; 
-      padding: 0; /* 移除外距 */
+      padding: 0; 
       display: flex; 
-      height: 100vh; /* 強制高度填滿 */
+      height: 100vh; 
       width: 100vw;
-      overflow: hidden; /* 防止捲動 */
+      overflow: hidden; 
     }
 
     .main-container { 
       display: flex; 
       flex-direction: row; 
       gap: 15px; 
-      width: 100%; /* 全寬 */
-      height: 100%; /* 全高 */
+      width: 100%; 
+      height: 100%; 
       background: white; 
       padding: 15px; 
-      box-sizing: border-box; /* 確保 padding 不會撐破寬度 */
+      box-sizing: border-box; 
     }
 
-    /* 繪本區：盡可能放大 */
     .ebook-section { 
-      flex: 2; /* 增加圖片比例 */
+      flex: 2; 
       display: flex;
       align-items: center;
       justify-content: center;
@@ -45,10 +43,9 @@
       height: auto;
       border-radius: 10px; 
       border: 3px solid #FFE082; 
-      object-fit: contain; /* 確保圖片不變形且完整顯示 */
+      object-fit: contain; 
     }
 
-    /* 控制區：維持功能性 */
     .control-section { 
       flex: 0.8; 
       display: flex; 
@@ -59,7 +56,7 @@
       padding: 20px; 
       border-radius: 20px;
       box-shadow: -5px 0 15px rgba(0,0,0,0.05);
-      overflow-y: auto; /* 控制區內容多時可捲動 */
+      overflow-y: auto; 
     }
 
     .mode-switch { display: flex; gap: 10px; }
@@ -75,6 +72,18 @@
     
     .target-sentence { font-size: 24px; color: #2C3E50; font-weight: bold; padding: 10px; text-align: center; border-bottom: 2px dashed #FFE082; }
     
+    /* 學生說話區塊樣式 */
+    .user-speech-bubble {
+      background: #EBF4FF;
+      border: 2px dashed #4A90E2;
+      border-radius: 15px;
+      padding: 12px;
+      margin: 5px 0;
+      display: none; /* 初始隱藏 */
+    }
+    .user-label { font-size: 12px; color: #4A90E2; font-weight: bold; margin-bottom: 4px; }
+    .user-text { font-size: 18px; color: #333; font-weight: 500; }
+
     .feedback-box { display: flex; align-items: flex-start; gap: 12px; background: white; padding: 15px; border-radius: 15px; border-left: 6px solid #FFE082; min-height: 100px; }
     .kiwi-avatar { width: 60px; height: 60px; cursor: pointer; }
     .kiwi-text { color: #e67e22; font-size: 18px; text-align: left; line-height: 1.4; white-space: pre-line; }
@@ -84,7 +93,6 @@
     
     #status-msg { color: #95a5a6; font-size: 14px; font-style: italic; text-align: center; }
 
-    /* 平板/手機模式自動切換 */
     @media (max-width: 900px) { 
       body { height: auto; overflow: visible; }
       .main-container { flex-direction: column; height: auto; } 
@@ -121,6 +129,11 @@
     <div id="targetSentence" class="target-sentence">Ready to learn?</div>
     <div id="wordList" class="practice-area"></div>
 
+    <div id="userSpeechArea" class="user-speech-bubble">
+      <div class="user-label">You said:</div>
+      <div id="userTranscript" class="user-text">Listening...</div>
+    </div>
+
     <div class="feedback-box">
       <img class="kiwi-avatar" src="https://cdn-icons-png.flaticon.com/512/826/826913.png" onclick="repeatKiwi()">
       <div id="feedback" class="kiwi-text">Pick a word to start!</div>
@@ -131,9 +144,6 @@
 </div>
 
 <script>
-  // ... 這裡維持你原本的所有 JavaScript 邏輯 (GAS_URL, bookData, speakEnglish, etc.) ...
-  // 請記得把你原本 script 標籤內的內容貼回來即可
-  
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyj9r8m_2Tt0cGbggA72xFtL6cFR2VXGKrRVUN7QefW1_mkewI2a0iuUKEWHssy0KEk/exec";
 
   const bookData = {
@@ -173,6 +183,7 @@
       document.getElementById('wordList').innerHTML = ""; 
       document.getElementById('targetSentence').innerText = "🎮 Game Mode!";
       document.getElementById('feedback').innerText = "Say 'Hello' to Kiwi!";
+      document.getElementById('userSpeechArea').style.display = "none";
     } else {
       pBtn.classList.add('active'); gBtn.classList.remove('game-active');
       loadPage();
@@ -203,6 +214,7 @@
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRecognition();
   recognition.lang = 'en-US';
+  recognition.interimResults = true; // 讓辨識過程更即時
 
   function handleMicClick() {
     if (document.getElementById('mainBtn').innerText.includes("START")) {
@@ -216,6 +228,11 @@
     document.getElementById('mainBtn').innerText = "🛑 STOP";
     document.getElementById('mainBtn').classList.add('btn-recording');
     document.getElementById('status-msg').innerText = "Listening...";
+    
+    // 顯示辨識區並初始化
+    document.getElementById('userSpeechArea').style.display = "block";
+    document.getElementById('userTranscript').innerText = "辨識中...";
+    document.getElementById('userTranscript').style.color = "#999";
   };
 
   recognition.onend = () => {
@@ -224,27 +241,46 @@
   };
 
   recognition.onresult = async (event) => {
-    const result = event.results[0][0].transcript;
-    document.getElementById('status-msg').innerText = "Kiwi is thinking...";
-    try {
-      const resp = await fetch(GAS_URL, {
-        method: "POST",
-        body: JSON.stringify({ 
-          target: currentTarget || "Hello", 
-          studentText: result, 
-          mode: currentMode,
-          unit: document.getElementById('unitSelect').value 
-        })
-      });
-      const data = await resp.json();
-      const parts = data.feedback.split('|');
-      const eng = parts[0].trim();
-      const zht = parts[1] ? parts[1].trim() : "";
-      document.getElementById('feedback').innerText = eng + "\n" + zht;
-      speakEnglish(eng);
-      document.getElementById('status-msg').innerText = "Score: " + "⭐".repeat(data.score || 1);
-    } catch (e) {
-      document.getElementById('status-msg').innerText = "Error! Please check GAS Deployment.";
+    let interimTranscript = '';
+    let finalTranscript = '';
+
+    for (let i = event.resultIndex; i < event.results.length; ++i) {
+      if (event.results[i].isFinal) {
+        finalTranscript += event.results[i][0].transcript;
+      } else {
+        interimTranscript += event.results[i][0].transcript;
+      }
+    }
+
+    // 更新顯示文字
+    const displayTranscript = finalTranscript || interimTranscript;
+    document.getElementById('userTranscript').innerText = displayTranscript;
+    
+    // 如果是最終結果，變更顏色並傳送給 API
+    if (finalTranscript) {
+      document.getElementById('userTranscript').style.color = "#333";
+      document.getElementById('status-msg').innerText = "Kiwi is thinking...";
+      
+      try {
+        const resp = await fetch(GAS_URL, {
+          method: "POST",
+          body: JSON.stringify({ 
+            target: currentTarget || "Hello", 
+            studentText: finalTranscript, 
+            mode: currentMode,
+            unit: document.getElementById('unitSelect').value 
+          })
+        });
+        const data = await resp.json();
+        const parts = data.feedback.split('|');
+        const eng = parts[0].trim();
+        const zht = parts[1] ? parts[1].trim() : "";
+        document.getElementById('feedback').innerText = eng + "\n" + zht;
+        speakEnglish(eng);
+        document.getElementById('status-msg').innerText = "Score: " + "⭐".repeat(data.score || 1);
+      } catch (e) {
+        document.getElementById('status-msg').innerText = "Error! Please check GAS Deployment.";
+      }
     }
   };
 
