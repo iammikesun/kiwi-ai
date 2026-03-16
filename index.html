@@ -4,27 +4,93 @@
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <style>
-    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #FFF9E1; margin: 0; padding: 20px; display: flex; justify-content: center; }
-    .main-container { display: flex; flex-direction: row; gap: 20px; max-width: 1200px; width: 100%; background: white; padding: 20px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); }
-    .ebook-section { flex: 1.5; position: relative; }
-    .ebook-img { width: 100%; border-radius: 15px; border: 3px solid #FFE082; display: block; height: auto; }
-    .control-section { flex: 1; display: flex; flex-direction: column; gap: 12px; min-width: 300px; background: #FFFEF5; padding: 15px; border-radius: 20px; }
-    .mode-switch { display: flex; gap: 10px; margin-bottom: 5px; }
-    .btn-mode { flex: 1; padding: 10px; border-radius: 12px; border: 2px solid #ddd; background: white; color: #666; font-weight: bold; cursor: pointer; transition: 0.3s; }
+    /* 讓整個身體填滿視窗，不留白邊 */
+    body { 
+      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
+      background: #FFF9E1; 
+      margin: 0; 
+      padding: 0; /* 移除外距 */
+      display: flex; 
+      height: 100vh; /* 強制高度填滿 */
+      width: 100vw;
+      overflow: hidden; /* 防止捲動 */
+    }
+
+    .main-container { 
+      display: flex; 
+      flex-direction: row; 
+      gap: 15px; 
+      width: 100%; /* 全寬 */
+      height: 100%; /* 全高 */
+      background: white; 
+      padding: 15px; 
+      box-sizing: border-box; /* 確保 padding 不會撐破寬度 */
+    }
+
+    /* 繪本區：盡可能放大 */
+    .ebook-section { 
+      flex: 2; /* 增加圖片比例 */
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      background: #f0f0f0;
+      border-radius: 20px;
+      overflow: hidden;
+    }
+
+    .ebook-img { 
+      max-width: 100%; 
+      max-height: 100%; 
+      width: auto;
+      height: auto;
+      border-radius: 10px; 
+      border: 3px solid #FFE082; 
+      object-fit: contain; /* 確保圖片不變形且完整顯示 */
+    }
+
+    /* 控制區：維持功能性 */
+    .control-section { 
+      flex: 0.8; 
+      display: flex; 
+      flex-direction: column; 
+      gap: 10px; 
+      min-width: 320px; 
+      background: #FFFEF5; 
+      padding: 20px; 
+      border-radius: 20px;
+      box-shadow: -5px 0 15px rgba(0,0,0,0.05);
+      overflow-y: auto; /* 控制區內容多時可捲動 */
+    }
+
+    .mode-switch { display: flex; gap: 10px; }
+    .btn-mode { flex: 1; padding: 12px; border-radius: 12px; border: 2px solid #ddd; background: white; font-weight: bold; cursor: pointer; }
     .btn-mode.active { border-color: #4A90E2; background: #EBF4FF; color: #4A90E2; }
     .btn-mode.game-active { border-color: #FF9800; background: #FFF3E0; color: #E65100; }
-    select { width: 100%; padding: 12px; border-radius: 12px; border: 2px solid #FF5A5A; font-size: 16px; font-weight: bold; color: #d32f2f; cursor: pointer; }
+    
+    select { width: 100%; padding: 12px; border-radius: 12px; border: 2px solid #FF5A5A; font-size: 16px; font-weight: bold; color: #d32f2f; }
+
     .practice-area { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
-    .btn-sample { background: white; color: #4A90E2; border: 2px solid #4A90E2; padding: 8px 16px; border-radius: 20px; font-size: 14px; font-weight: bold; cursor: pointer; }
+    .btn-sample { background: white; color: #4A90E2; border: 2px solid #4A90E2; padding: 10px 18px; border-radius: 20px; font-size: 15px; font-weight: bold; cursor: pointer; }
     .btn-sentence { border-color: #FF5A5A; color: #FF5A5A; }
-    .target-sentence { font-size: 20px; color: #2C3E50; font-weight: bold; padding: 10px; border-bottom: 2px dashed #FFE082; min-height: 30px; }
-    .feedback-box { display: flex; align-items: flex-start; gap: 10px; background: white; padding: 15px; border-radius: 15px; border-left: 6px solid #FFE082; min-height: 80px; }
+    
+    .target-sentence { font-size: 24px; color: #2C3E50; font-weight: bold; padding: 10px; text-align: center; border-bottom: 2px dashed #FFE082; }
+    
+    .feedback-box { display: flex; align-items: flex-start; gap: 12px; background: white; padding: 15px; border-radius: 15px; border-left: 6px solid #FFE082; min-height: 100px; }
     .kiwi-avatar { width: 60px; height: 60px; cursor: pointer; }
-    .kiwi-text { color: #e67e22; font-size: 16px; text-align: left; line-height: 1.4; white-space: pre-line; }
-    .btn-mic { width: 100%; background: #FF5A5A; color: white; border: none; padding: 18px; border-radius: 50px; font-size: 22px; font-weight: bold; box-shadow: 0 6px #d32f2f; cursor: pointer; }
+    .kiwi-text { color: #e67e22; font-size: 18px; text-align: left; line-height: 1.4; white-space: pre-line; }
+
+    .btn-mic { width: 100%; background: #FF5A5A; color: white; border: none; padding: 20px; border-radius: 50px; font-size: 24px; font-weight: bold; box-shadow: 0 6px #d32f2f; cursor: pointer; margin-top: auto; }
     .btn-recording { background: #4CAF50 !important; box-shadow: 0 6px #388E3C !important; }
-    #status-msg { color: #95a5a6; font-size: 14px; font-style: italic; }
-    @media (max-width: 850px) { .main-container { flex-direction: column; padding: 10px; } .ebook-section { order: 1; } .control-section { order: 2; min-width: unset; } }
+    
+    #status-msg { color: #95a5a6; font-size: 14px; font-style: italic; text-align: center; }
+
+    /* 平板/手機模式自動切換 */
+    @media (max-width: 900px) { 
+      body { height: auto; overflow: visible; }
+      .main-container { flex-direction: column; height: auto; } 
+      .ebook-section { height: 60vh; }
+      .control-section { min-width: unset; } 
+    }
   </style>
 </head>
 <body>
@@ -36,7 +102,7 @@
       <optgroup label="Unit 1: What's the Matter?">
         <option value="U1_P2">U1 P.2 - Body Parts</option>
         <option value="U1_P4">U1 P.4 - Let's Sing</option>
-        <option value="U1_P6">U1 P.6 - Jobs</option>
+        <option value="U1_P6" selected>U1 P.6 - Jobs</option>
         <option value="U1_P8">U1 P.8 - Practice</option>
       </optgroup>
       <optgroup label="Unit 2: What Day Is Today?">
@@ -65,7 +131,9 @@
 </div>
 
 <script>
-  // ⚠️ 請確保這是你最新部署的 /exec 連結
+  // ... 這裡維持你原本的所有 JavaScript 邏輯 (GAS_URL, bookData, speakEnglish, etc.) ...
+  // 請記得把你原本 script 標籤內的內容貼回來即可
+  
   const GAS_URL = "https://script.google.com/macros/s/AKfycbyj9r8m_2Tt0cGbggA72xFtL6cFR2VXGKrRVUN7QefW1_mkewI2a0iuUKEWHssy0KEk/exec";
 
   const bookData = {
@@ -86,22 +154,13 @@
     if (!text) return;
     window.speechSynthesis.cancel();
     const utt = new SpeechSynthesisUtterance(text);
-    
-    // 1. 強制設定語系標籤
     utt.lang = 'en-US'; 
     utt.rate = 0.85;
-
-    // 2. 核心修正：手動在瀏覽器清單中找真正的英文聲音
     const voices = window.speechSynthesis.getVoices();
-    // 優先找 Google US English 或 Microsoft Zira 等英文人聲
     const enVoice = voices.find(v => v.lang === 'en-US' && v.name.includes('Google')) || 
                     voices.find(v => v.lang.includes('en-US')) || 
                     voices.find(v => v.lang.includes('en'));
-    
-    if (enVoice) {
-      utt.voice = enVoice;
-    }
-    
+    if (enVoice) utt.voice = enVoice;
     window.speechSynthesis.speak(utt);
   }
 
@@ -124,9 +183,7 @@
     const key = document.getElementById('unitSelect').value;
     const data = bookData[key];
     document.getElementById('bookImg').src = data.img;
-    
     if (currentMode === 'game') return;
-
     const listDiv = document.getElementById('wordList');
     listDiv.innerHTML = "";
     data.words.forEach(w => {
@@ -169,7 +226,6 @@
   recognition.onresult = async (event) => {
     const result = event.results[0][0].transcript;
     document.getElementById('status-msg').innerText = "Kiwi is thinking...";
-    
     try {
       const resp = await fetch(GAS_URL, {
         method: "POST",
@@ -180,12 +236,10 @@
           unit: document.getElementById('unitSelect').value 
         })
       });
-      
       const data = await resp.json();
       const parts = data.feedback.split('|');
       const eng = parts[0].trim();
       const zht = parts[1] ? parts[1].trim() : "";
-      
       document.getElementById('feedback').innerText = eng + "\n" + zht;
       speakEnglish(eng);
       document.getElementById('status-msg').innerText = "Score: " + "⭐".repeat(data.score || 1);
