@@ -65,8 +65,11 @@
 </div>
 
 <script>
-  // 🔗 請務必確認此 URL 與你最新部署的 GAS 一致
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbyu-mX-oQHdGajSSAMHqJSGeIjmA1hRY-SrYaH1As-NjJCq0DTTSt0UMWiNsoWFt4ej/exec";
+  /**
+   * ⚠️ 注意：此處必須更換為你的 Web App URL
+   * 格式應為 https://script.google.com/macros/s/XXXXX/exec
+   */
+  const GAS_URL = "https://script.google.com/macros/library/d/1gAMzWLpSbEQEwe1dDZuyDZT0xCofIsQLFZzsUoFY6Q91O66RnmML2IgH/32";
 
   const bookData = {
     "U1_P2": { img: "2.jpg", words: ["Eye", "Ear", "Nose", "Mouth", "Head"], sentences: ["My eye hurts."] },
@@ -82,13 +85,12 @@
   let currentTarget = "";
   let currentMode = "correction";
 
-  // 🔊 修正後的發音函數：強制使用英文語音
   function speakEnglish(text) {
     if (!text) return;
     window.speechSynthesis.cancel();
     const utt = new SpeechSynthesisUtterance(text);
     utt.lang = 'en-US'; 
-    utt.rate = 0.85; // 稍慢一點讓小朋友聽清楚
+    utt.rate = 0.85;
     window.speechSynthesis.speak(utt);
   }
 
@@ -129,11 +131,9 @@
     });
   }
 
-  // 🎤 語音辨識設定
-  const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
+  const SpeechRecognition = window.SpeechRecognition || window.webkitRecognition;
   const recognition = new SpeechRecognition();
   recognition.lang = 'en-US';
-  recognition.interimResults = false;
 
   function handleMicClick() {
     try {
@@ -142,7 +142,7 @@
       } else {
         recognition.stop();
       }
-    } catch (e) { console.log("Recognition busy"); }
+    } catch (e) { console.warn("Recognition busy"); }
   }
 
   recognition.onstart = () => {
@@ -163,6 +163,7 @@
     try {
       const resp = await fetch(GAS_URL, {
         method: "POST",
+        mode: 'no-cors', // 為了避免 CORS 報錯，通常 GAS 需要設為 no-cors
         body: JSON.stringify({ 
           target: currentTarget || "Hello", 
           studentText: result, 
@@ -170,21 +171,30 @@
           unit: document.getElementById('unitSelect').value 
         })
       });
-      const data = await resp.json();
       
-      // 解析分欄資訊 (英文評語 | 中文翻譯)
+      // 注意：使用 no-cors 時無法直接抓取 JSON，建議正常部署 GAS 並開啟 Anyone 權限
+      // 這裡暫用正常 fetch，請確保 GAS 部署權限為 Anyone
+      const normalResp = await fetch(GAS_URL, {
+        method: "POST",
+        body: JSON.stringify({ 
+          target: currentTarget || "Hello", 
+          studentText: result, 
+          mode: currentMode,
+          unit: document.getElementById('unitSelect').value 
+        })
+      });
+      
+      const data = await normalResp.json();
       const parts = data.feedback.split('|');
-      const engFeedback = parts[0].trim();
-      const zhtFeedback = parts[1] ? parts[1].trim() : "";
+      const eng = parts[0].trim();
+      const zht = parts[1] ? parts[1].trim() : "";
       
-      document.getElementById('feedback').innerText = engFeedback + "\n" + zhtFeedback;
-      
-      // 🔊 只讓 Kiwi 唸英文評語
-      speakEnglish(engFeedback);
-      
+      document.getElementById('feedback').innerText = eng + "\n" + zht;
+      speakEnglish(eng);
       document.getElementById('status-msg').innerText = "Score: " + "⭐".repeat(data.score || 1);
     } catch (e) {
-      document.getElementById('status-msg').innerText = "Kiwi had a hiccup! Try again.";
+      console.error(e);
+      document.getElementById('status-msg').innerText = "Kiwi 正在喝水，請再試一次！";
     }
   };
 
@@ -195,6 +205,5 @@
 
   loadPage();
 </script>
-
 </body>
 </html>
