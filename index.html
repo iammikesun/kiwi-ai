@@ -53,6 +53,19 @@
         <h3 id="welcome-msg" style="margin: 0; color: #e67e22;">Welcome!</h3>
         <p id="unit-info" style="margin: 0; font-weight: bold; color: #999;"></p>
         
+        <div style="margin: 5px 0;">
+            <select id="unitSelect" class="login-input" style="padding: 8px; font-size: 14px;" onchange="changeUnit()">
+                <option value="Unit 1">Unit 1</option>
+                <option value="Unit 2">Unit 2</option>
+                <option value="Unit 3">Unit 3</option>
+                <option value="Unit 4">Unit 4</option>
+                <option value="Unit 5">Unit 5</option>
+                <option value="Unit 6">Unit 6</option>
+                <option value="Unit 7">Unit 7</option>
+                <option value="Unit 8">Unit 8</option>
+            </select>
+        </div>
+        
         <div id="targetSentence" class="target-sentence">Ready to Start?</div>
         <div id="wordList" style="margin-top: 10px;"></div>
 
@@ -67,14 +80,12 @@
 </div>
 
 <script>
-    // ⚠️ 請確保這是你剛剛部署成功的 GAS 網址
     const GAS_URL = "https://script.google.com/macros/s/AKfycbz6FYuTGwdHdzVN1nVfesonQUB9zUKDBGw-INskT_FoD5dcKXSq1o6NzY2d5wRQWfi3/exec";
 
     let currentStudent = null;
     let currentTextbook = null;
     let currentTarget = "";
 
-    // 1. 處理登入
     async function handleLogin() {
         const name = document.getElementById('stuName').value.trim();
         const phone = document.getElementById('stuPhone').value.trim();
@@ -94,6 +105,10 @@
             if (data.success) {
                 currentStudent = data.student;
                 currentTextbook = data.textbook;
+                // 同步下拉選單的值
+                if (currentStudent.unit) {
+                    document.getElementById('unitSelect').value = currentStudent.unit;
+                }
                 showMain();
             } else {
                 status.innerText = "❌ " + data.msg;
@@ -103,23 +118,23 @@
         }
     }
 
-    // 2. 顯示教材主畫面
     function showMain() {
         document.getElementById('login-container').style.display = 'none';
         document.getElementById('main-container').style.display = 'flex';
         
         document.getElementById('welcome-msg').innerText = `Hi, ${currentStudent.name}!`;
-        document.getElementById('unit-info').innerText = `${currentStudent.unit} - ${currentStudent.page}`;
+        document.getElementById('unit-info').innerText = `${currentStudent.unit || ""} - ${currentStudent.page || ""}`;
         
-        // 設定圖片
-        if (currentTextbook.imageUrl) {
-            document.getElementById('bookImg').src = currentTextbook.imageUrl;
+        // 設定圖片並加入錯誤處理
+        const bookImg = document.getElementById('bookImg');
+        if (currentTextbook && currentTextbook.imageUrl) {
+            bookImg.src = currentTextbook.imageUrl;
+            bookImg.onerror = () => { bookImg.src = "https://via.placeholder.com/600x400?text=Image+Not+Found"; };
         }
 
-        // 生成單字按鈕
         const wordArea = document.getElementById('wordList');
         wordArea.innerHTML = "";
-        if (currentTextbook.words) {
+        if (currentTextbook && currentTextbook.words) {
             currentTextbook.words.split(',').forEach(w => {
                 const btn = document.createElement("button");
                 btn.className = "btn-sample";
@@ -134,7 +149,27 @@
         }
     }
 
-    // 3. 語音功能 (與原本 logic 相同)
+    // 新增：切換單元功能
+    async function changeUnit() {
+        const selectedUnit = document.getElementById('unitSelect').value;
+        document.getElementById('status-msg').innerText = "Loading " + selectedUnit + "...";
+        
+        try {
+            const resp = await fetch(`${GAS_URL}?action=getTeacherData&unit=${encodeURIComponent(selectedUnit)}&level=4`);
+            const data = await resp.json();
+            
+            if (data.success || data.words) {
+                currentTextbook = data;
+                // 更新顯示的單元文字
+                if(currentStudent) currentStudent.unit = selectedUnit;
+                showMain();
+                document.getElementById('status-msg').innerText = "Unit Loaded!";
+            }
+        } catch (e) {
+            document.getElementById('status-msg').innerText = "Load Failed!";
+        }
+    }
+
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
@@ -149,7 +184,6 @@
         const transcript = event.results[0][0].transcript;
         document.getElementById('status-msg').innerText = "You said: " + transcript;
         
-        // 呼叫 GAS AI 評分 (這部分依賴你原本 processSpeech 的實作)
         const params = new URLSearchParams({
             action: "processSpeech",
             studentText: transcript,
