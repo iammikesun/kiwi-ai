@@ -5,115 +5,48 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
   <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
   <style>
-    body { 
-      font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; 
-      background: #FFF9E1; 
-      margin: 0; 
-      padding: 0; 
-      display: flex; 
-      height: 100vh; 
-      width: 100vw;
-      overflow: hidden; 
-    }
-
-    .main-container { 
-      display: flex; 
-      flex-direction: row; 
-      gap: 15px; 
-      width: 100%; 
-      height: 100%; 
-      background: white; 
-      padding: 15px; 
-      box-sizing: border-box; 
-    }
-
-    .ebook-section { 
-      flex: 2; 
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      background: #f0f0f0;
-      border-radius: 20px;
-      overflow: hidden;
-    }
-
-    .ebook-img { 
-      max-width: 100%; 
-      max-height: 100%; 
-      width: auto;
-      height: auto;
-      border-radius: 10px; 
-      border: 3px solid #FFE082; 
-      object-fit: contain; 
-    }
-
-    .control-section { 
-      flex: 0.8; 
-      display: flex; 
-      flex-direction: column; 
-      gap: 10px; 
-      min-width: 320px; 
-      background: #FFFEF5; 
-      padding: 20px; 
-      border-radius: 20px;
-      box-shadow: -5px 0 15px rgba(0,0,0,0.05);
-      overflow-y: auto; 
-    }
-
+    /* 保留原本所有的 CSS 樣式 */
+    body { font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; background: #FFF9E1; margin: 0; padding: 0; display: flex; height: 100vh; width: 100vw; overflow: hidden; }
+    .main-container { display: flex; flex-direction: row; gap: 15px; width: 100%; height: 100%; background: white; padding: 15px; box-sizing: border-box; }
+    .ebook-section { flex: 2; display: flex; align-items: center; justify-content: center; background: #f0f0f0; border-radius: 20px; overflow: hidden; }
+    .ebook-img { max-width: 100%; max-height: 100%; width: auto; height: auto; border-radius: 10px; border: 3px solid #FFE082; object-fit: contain; }
+    .control-section { flex: 0.8; display: flex; flex-direction: column; gap: 10px; min-width: 320px; background: #FFFEF5; padding: 20px; border-radius: 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.05); overflow-y: auto; }
     .mode-switch { display: flex; gap: 10px; }
     .btn-mode { flex: 1; padding: 12px; border-radius: 12px; border: 2px solid #ddd; background: white; font-weight: bold; cursor: pointer; }
     .btn-mode.active { border-color: #4A90E2; background: #EBF4FF; color: #4A90E2; }
     .btn-mode.game-active { border-color: #FF9800; background: #FFF3E0; color: #E65100; }
-    
     select { width: 100%; padding: 12px; border-radius: 12px; border: 2px solid #FF5A5A; font-size: 16px; font-weight: bold; color: #d32f2f; }
-
     .practice-area { display: flex; flex-wrap: wrap; gap: 8px; justify-content: center; }
     .btn-sample { background: white; color: #4A90E2; border: 2px solid #4A90E2; padding: 10px 18px; border-radius: 20px; font-size: 15px; font-weight: bold; cursor: pointer; }
     .btn-sentence { border-color: #FF5A5A; color: #FF5A5A; }
-    
-    .target-sentence { font-size: 24px; color: #2C3E50; font-weight: bold; padding: 10px; text-align: center; border-bottom: 2px dashed #FFE082; }
-    
-    .user-speech-bubble {
-      background: #EBF4FF;
-      border: 2px dashed #4A90E2;
-      border-radius: 15px;
-      padding: 12px;
-      margin: 5px 0;
-      display: none; 
-    }
+    .target-sentence { font-size: 24px; color: #2C3E50; font-weight: bold; padding: 10px; text-align: center; border-bottom: 2px dashed #FFE082; min-height: 40px;}
+    .user-speech-bubble { background: #EBF4FF; border: 2px dashed #4A90E2; border-radius: 15px; padding: 12px; margin: 5px 0; display: none; }
     .user-label { font-size: 12px; color: #4A90E2; font-weight: bold; margin-bottom: 4px; }
     .user-text { font-size: 18px; color: #333; font-weight: 500; }
-
     .feedback-box { display: flex; align-items: flex-start; gap: 12px; background: white; padding: 15px; border-radius: 15px; border-left: 6px solid #FFE082; min-height: 100px; }
     .kiwi-avatar { width: 60px; height: 60px; cursor: pointer; }
     .kiwi-text { color: #e67e22; font-size: 18px; text-align: left; line-height: 1.4; white-space: pre-line; }
-
     .btn-mic { width: 100%; background: #FF5A5A; color: white; border: none; padding: 20px; border-radius: 50px; font-size: 24px; font-weight: bold; box-shadow: 0 6px #d32f2f; cursor: pointer; margin-top: auto; }
     .btn-recording { background: #4CAF50 !important; box-shadow: 0 6px #388E3C !important; }
-    
     #status-msg { color: #95a5a6; font-size: 14px; font-style: italic; text-align: center; }
-
-    @media (max-width: 900px) { 
-      body { height: auto; overflow: visible; }
-      .main-container { flex-direction: column; height: auto; } 
-      .ebook-section { height: 60vh; }
-      .control-section { min-width: unset; } 
-    }
+    @media (max-width: 900px) { body { height: auto; overflow: visible; } .main-container { flex-direction: column; height: auto; } .ebook-section { height: 60vh; } .control-section { min-width: unset; } }
   </style>
 </head>
 <body>
 
 <div class="main-container">
-  <div class="ebook-section"><img id="bookImg" class="ebook-img" src="2.jpg"></div>
+  <div class="ebook-section">
+    <img id="bookImg" class="ebook-img" src="" alt="Loading...">
+  </div>
   <div class="control-section">
     <select id="unitSelect" onchange="loadPage()">
-      <optgroup label="Unit 1: What's the Matter?">
+      <optgroup label="Unit 1">
         <option value="U1_P2">U1 P.2 - Body Parts</option>
         <option value="U1_P4">U1 P.4 - Let's Sing</option>
         <option value="U1_P6" selected>U1 P.6 - Jobs</option>
         <option value="U1_P8">U1 P.8 - Practice</option>
       </optgroup>
-      <optgroup label="Unit 2: What Day Is Today?">
+      <optgroup label="Unit 2">
         <option value="U2_P10">U2 P.10 - Let's Talk</option>
         <option value="U2_P12">U2 P.12 - Let's Sing</option>
         <option value="U2_P14">U2 P.14 - Let's Learn</option>
@@ -144,76 +77,52 @@
 </div>
 
 <script>
-  const GAS_URL = "https://script.google.com/macros/s/AKfycbx13nltRgibY3ydL0sQyWm5meJxtdqm7qGYEgARkY3-1ThXYhKc9LoT4TmBPGBLSGu6/exec";
-
-  const bookData = {
-    "U1_P2": { img: "2.jpg", words: ["Eye", "Ear", "Nose", "Mouth", "Head"], sentences: ["My eye hurts."] },
-    "U1_P4": { img: "4.jpg", words: ["Doctor", "Nurse", "Patient"], sentences: ["I am a doctor."] },
-    "U1_P6": { img: "6.jpg", words: ["Student", "Teacher", "Cook", "Driver"], sentences: ["Are you a doctor?"] },
-    "U1_P8": { img: "8.jpg", words: ["Ambulance", "Mail carrier"], sentences: ["Is he a doctor?"] },
-    "U2_P10": { img: "10.jpg", words: ["Sunday", "Monday", "Tuesday", "Wednesday", "Thursday", "Friday", "Saturday"], sentences: ["What day is today?"] },
-    "U2_P12": { img: "12.jpg", words: ["Walk", "Run", "Hop", "Jump"], sentences: ["We have no time to play."] },
-    "U2_P14": { img: "14.jpg", words: ["Skate", "Ski", "Sing", "Dance", "Swim"], sentences: ["I can skate."] },
-    "U2_P16": { img: "16.jpg", words: ["Kite"], sentences: ["Can you fly a kite?"] }
-  };
+  // ⚠️ 請修改為你最新的 GAS 部署網址
+  const GAS_URL = "https://script.google.com/macros/s/AKfycbzr7-O_db-_q5xvdjKGntjmWavnmj0nUm1dkVMaHDUsu2jZQLcOPCGP1oIDwonVTrqj/exec";
 
   let currentTarget = "";
   let currentMode = "correction";
-  let chatHistory = []; // 🆕 記憶對話歷史
+  let chatHistory = [];
+  let lastAudioBase64 = null;
 
-  function speakEnglish(text) {
-    if (!text) return;
-    window.speechSynthesis.cancel();
-    const utt = new SpeechSynthesisUtterance(text);
-    utt.lang = 'en-US'; 
-    utt.rate = 0.85;
-    const voices = window.speechSynthesis.getVoices();
-    const enVoice = voices.find(v => v.lang === 'en-US' && v.name.includes('Google')) || 
-                    voices.find(v => v.lang.includes('en-US')) || 
-                    voices.find(v => v.lang.includes('en'));
-    if (enVoice) utt.voice = enVoice;
-    window.speechSynthesis.speak(utt);
-  }
+  // 1. 動態從 GAS 抓取教材 (移除原本寫死的 bookData)
+  async function loadPage() {
+    chatHistory = [];
+    const unit = document.getElementById('unitSelect').value;
+    document.getElementById('status-msg').innerText = "Loading Material...";
+    document.getElementById('wordList').innerHTML = "";
 
-  function setMode(mode) {
-    currentMode = mode;
-    chatHistory = []; // 🆕 切換模式時重置記憶
-    const pBtn = document.getElementById('btnPractice');
-    const gBtn = document.getElementById('btnGame');
-    if (mode === 'game') {
-      gBtn.classList.add('game-active'); pBtn.classList.remove('active');
-      document.getElementById('wordList').innerHTML = ""; 
-      document.getElementById('targetSentence').innerText = "🎮 Game Mode!";
-      document.getElementById('feedback').innerText = "Say 'Hello' to Kiwi!";
-      document.getElementById('userSpeechArea').style.display = "none";
-    } else {
-      pBtn.classList.add('active'); gBtn.classList.remove('game-active');
-      loadPage();
+    try {
+      const response = await fetch(`${GAS_URL}?action=getTeacherData&unit=${unit}`);
+      const data = await response.json();
+      
+      if (data.imageUrl) document.getElementById('bookImg').src = data.imageUrl;
+      
+      if (currentMode === 'correction') {
+        if (data.words) {
+          data.words.split(',').forEach(w => {
+            const btn = document.createElement("button");
+            btn.className = "btn-sample"; btn.innerText = w.trim();
+            btn.onclick = () => { currentTarget = w.trim(); document.getElementById('targetSentence').innerText = `"${w.trim()}"`; speakBackup(w.trim()); };
+            document.getElementById('wordList').appendChild(btn);
+          });
+        }
+        if (data.sentences) {
+          data.sentences.split(',').forEach(s => {
+            const btn = document.createElement("button");
+            btn.className = "btn-sample btn-sentence"; btn.innerText = "Sentence 🗣️";
+            btn.onclick = () => { currentTarget = s.trim(); document.getElementById('targetSentence').innerText = `"${s.trim()}"`; speakBackup(s.trim()); };
+            document.getElementById('wordList').appendChild(btn);
+          });
+        }
+      }
+      document.getElementById('status-msg').innerText = "Ready!";
+    } catch (e) {
+      document.getElementById('status-msg').innerText = "Load Error!";
     }
   }
 
-  function loadPage() {
-    chatHistory = []; // 🆕 切換單元時重置記憶
-    const key = document.getElementById('unitSelect').value;
-    const data = bookData[key];
-    document.getElementById('bookImg').src = data.img;
-    if (currentMode === 'game') return;
-    const listDiv = document.getElementById('wordList');
-    listDiv.innerHTML = "";
-    data.words.forEach(w => {
-      const btn = document.createElement("button");
-      btn.className = "btn-sample"; btn.innerText = w;
-      btn.onclick = () => { currentTarget = w; document.getElementById('targetSentence').innerText = `"${w}"`; speakEnglish(w); };
-      listDiv.appendChild(btn);
-    });
-    data.sentences.forEach(s => {
-      const btn = document.createElement("button");
-      btn.className = "btn-sample btn-sentence"; btn.innerText = "Sentence 🗣️";
-      btn.onclick = () => { currentTarget = s; document.getElementById('targetSentence').innerText = `"${s}"`; speakEnglish(s); };
-      listDiv.appendChild(btn);
-    });
-  }
-
+  // 2. 語音辨識與 AI 處理 (改為 GET 請求以支援 GitHub 跨網域讀取)
   const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
   const recognition = new SpeechRecognition();
   recognition.lang = 'en-US';
@@ -230,10 +139,8 @@
   recognition.onstart = () => {
     document.getElementById('mainBtn').innerText = "🛑 STOP";
     document.getElementById('mainBtn').classList.add('btn-recording');
-    document.getElementById('status-msg').innerText = "Listening...";
     document.getElementById('userSpeechArea').style.display = "block";
-    document.getElementById('userTranscript').innerText = "辨識中...";
-    document.getElementById('userTranscript').style.color = "#999";
+    document.getElementById('userTranscript').innerText = "Listening...";
   };
 
   recognition.onend = () => {
@@ -242,68 +149,89 @@
   };
 
   recognition.onresult = async (event) => {
-    let interimTranscript = '';
     let finalTranscript = '';
-
     for (let i = event.resultIndex; i < event.results.length; ++i) {
-      if (event.results[i].isFinal) {
-        finalTranscript += event.results[i][0].transcript;
-      } else {
-        interimTranscript += event.results[i][0].transcript;
-      }
+      if (event.results[i].isFinal) finalTranscript += event.results[i][0].transcript;
     }
-
-    const displayTranscript = finalTranscript || interimTranscript;
-    document.getElementById('userTranscript').innerText = displayTranscript;
     
     if (finalTranscript) {
-      document.getElementById('userTranscript').style.color = "#333";
+      document.getElementById('userTranscript').innerText = finalTranscript;
       document.getElementById('status-msg').innerText = "Kiwi is thinking...";
       
+      // 構建參數
+      const params = new URLSearchParams({
+        action: "processSpeech",
+        target: currentTarget || "Hello",
+        studentText: finalTranscript,
+        mode: currentMode,
+        unit: document.getElementById('unitSelect').value,
+        history: JSON.stringify(chatHistory)
+      });
+
       try {
-        const resp = await fetch(GAS_URL, {
-          method: "POST",
-          body: JSON.stringify({ 
-            target: currentTarget || "Hello", 
-            studentText: finalTranscript, 
-            mode: currentMode,
-            unit: document.getElementById('unitSelect').value,
-            history: chatHistory // 🆕 傳送記憶給 GAS
-          })
-        });
+        const resp = await fetch(`${GAS_URL}?${params.toString()}`);
         const data = await resp.json();
         
-        // 🆕 處理彩帶效果
+        // 處理回饋
+        const feedback = data.feedback || "";
+        const parts = feedback.split('|');
+        document.getElementById('feedback').innerText = parts[0].trim() + (parts[1] ? "\n" + parts[1].trim() : "");
+        
+        // 彩帶
         if (data.score >= 5) {
-          confetti({
-            particleCount: 150,
-            spread: 70,
-            origin: { y: 0.6 },
-            colors: ['#FF5A5A', '#FFE082', '#4A90E2']
-          });
+          confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
         }
 
-        const parts = data.feedback.split('|');
-        const eng = parts[0].trim();
-        const zht = parts[1] ? parts[1].trim() : "";
-        document.getElementById('feedback').innerText = eng + "\n" + zht;
-        speakEnglish(eng);
+        // 播放 AI 語音 (Base64) 或 備用
+        if (data.audio) {
+          lastAudioBase64 = data.audio;
+          new Audio("data:audio/mp3;base64," + data.audio).play();
+        } else {
+          speakBackup(parts[0]);
+        }
+
         document.getElementById('status-msg').innerText = "Score: " + "⭐".repeat(data.score || 1);
 
-        // 🆕 更新對話記憶 (保留最近 6 條記錄)
+        // 記憶對話
         chatHistory.push({ role: "user", parts: [{ text: `Student said: ${finalTranscript}` }] });
-        chatHistory.push({ role: "model", parts: [{ text: data.feedback }] });
+        chatHistory.push({ role: "model", parts: [{ text: feedback }] });
         if (chatHistory.length > 6) chatHistory.splice(0, 2);
 
       } catch (e) {
-        document.getElementById('status-msg').innerText = "Error! Please check GAS Deployment.";
+        document.getElementById('status-msg').innerText = "AI Error!";
       }
     }
   };
 
+  // 輔助功能
+  function setMode(mode) {
+    currentMode = mode;
+    chatHistory = [];
+    document.getElementById('btnPractice').classList.toggle('active', mode === 'correction');
+    document.getElementById('btnGame').classList.toggle('game-active', mode === 'game');
+    if (mode === 'game') {
+      document.getElementById('wordList').innerHTML = "";
+      document.getElementById('targetSentence').innerText = "🎮 Game Mode!";
+      document.getElementById('feedback').innerText = "Say 'Hello' to Kiwi!";
+    } else {
+      loadPage();
+    }
+  }
+
+  function speakBackup(text) {
+    window.speechSynthesis.cancel();
+    const utt = new SpeechSynthesisUtterance(text);
+    utt.lang = 'en-US';
+    window.speechSynthesis.speak(utt);
+  }
+
   function repeatKiwi() {
-    const text = document.getElementById('feedback').innerText.split('\n')[0];
-    speakEnglish(text);
+    if (lastAudioBase64) {
+      new Audio("data:audio/mp3;base64," + lastAudioBase64).play();
+    } else {
+      const text = document.getElementById('feedback').innerText.split('\n')[0];
+      speakBackup(text);
+    }
   }
 
   window.onload = loadPage;
