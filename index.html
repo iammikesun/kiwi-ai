@@ -200,7 +200,24 @@
             });
         }
     }
-
+function playTeacherAudio(type) {
+    // type 可能是 'word' 或 'sent'
+    const url = (type === 'word') ? currentTextbook.wordAudio : currentTextbook.sentAudio;
+    
+    if (url && url.includes("google.com")) {
+        // 🚀 情況 A：網址包含 google，代表抓到了雲端硬碟的原音檔
+        console.log(`🎵 正在播放：【老師原音】(${type})`);
+        console.log("音檔路徑:", url);
+        const audio = new Audio(url);
+        audio.play();
+    } else {
+        // 🚀 情況 B：沒有網址，或是網址不對，啟動 TTS
+        const text = (type === 'word') ? currentTextbook.words : currentTextbook.sentences;
+        console.log(`🤖 正在播放：【Kiwi AI 合成音】(${type})`);
+        console.log("語音內容:", text);
+        speakText(text); // 呼叫您原本的 TTS 函式
+    }
+}
     function playSpecificAudio(url, backupText) {
         if (url && url !== "NONE" && url.startsWith("http")) {
             new Audio(url).play().catch(() => speakText(backupText));
@@ -295,24 +312,7 @@
         } catch (e) {}
         document.getElementById('mainBtn').innerText = "🎤 START";
     };
-function playTeacherAudio(type) {
-    // type 可能是 'word' 或 'sent'
-    const url = (type === 'word') ? currentTextbook.wordAudio : currentTextbook.sentAudio;
-    
-    if (url && url.includes("google.com")) {
-        // 🚀 情況 A：網址包含 google，代表抓到了雲端硬碟的原音檔
-        console.log(`🎵 正在播放：【老師原音】(${type})`);
-        console.log("音檔路徑:", url);
-        const audio = new Audio(url);
-        audio.play();
-    } else {
-        // 🚀 情況 B：沒有網址，或是網址不對，啟動 TTS
-        const text = (type === 'word') ? currentTextbook.words : currentTextbook.sentences;
-        console.log(`🤖 正在播放：【Kiwi AI 合成音】(${type})`);
-        console.log("語音內容:", text);
-        speakText(text); // 呼叫您原本的 TTS 函式
-    }
-}
+
     function speakText(text) {
         window.speechSynthesis.cancel();
         const utt = new SpeechSynthesisUtterance(text);
