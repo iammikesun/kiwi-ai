@@ -25,6 +25,7 @@
         
         /* 控制按鈕與元件 */
         .btn-sample { background: white; color: #4A90E2; border: 2px solid #4A90E2; padding: 10px 18px; border-radius: 20px; font-size: 15px; font-weight: bold; cursor: pointer; margin: 4px; }
+        .btn-sent { background: #E3F2FD; color: #1976D2; border: 2px solid #1976D2; padding: 12px 20px; border-radius: 12px; font-size: 16px; font-weight: 500; cursor: pointer; margin: 6px 0; text-align: left; width: 100%; }
         .target-sentence { font-size: 24px; color: #2C3E50; font-weight: bold; padding: 10px; text-align: center; border-bottom: 2px dashed #FFE082; }
         .feedback-box { display: flex; align-items: flex-start; gap: 12px; background: white; padding: 15px; border-radius: 15px; border-left: 6px solid #FFE082; min-height: 80px; margin-top: 10px; }
         .btn-mic { width: 100%; background: #FF5A5A; color: white; border: none; padding: 20px; border-radius: 50px; font-size: 24px; font-weight: bold; cursor: pointer; margin-top: auto; }
@@ -78,7 +79,9 @@
         </div>
         
         <div id="targetSentence" class="target-sentence">Ready to Start?</div>
+        
         <div id="wordList" style="margin-top: 10px;"></div>
+        <div id="sentenceList" style="margin-top: 10px;"></div>
 
         <div class="feedback-box">
             <img src="https://cdn-icons-png.flaticon.com/512/826/826913.png" width="50">
@@ -91,7 +94,7 @@
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyP0-6SDnbhEk3JtAePr-ZvC89eBttD4NMF3hfOgBOxG2ZfBerCiKxeDQCKNOMS4sb9/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxIqZaeLDoM-ecpVjonQeiDJ6uA4pjyTlp2IFU7ufxt1EbE3iy2kAbDp9Rzed5DIBSJ/exec";
 
     let currentStudent = null;
     let currentTextbook = null;
@@ -115,7 +118,6 @@
 
             if (data.success) {
                 currentStudent = data.student;
-                // 注意：這裡我們假設 GAS 會在 login 時回傳 textbook 以及該 Level 的 allOptions
                 currentTextbook = data.textbook || data; 
                 showMain();
             } else {
@@ -131,7 +133,7 @@
         document.getElementById('main-container').style.display = 'flex';
         
         document.getElementById('welcome-msg').innerText = `Hi, ${currentStudent.name}!`;
-        document.getElementById('unit-info').innerText = `Level ${currentStudent.level} : ${currentStudent.unit || ""} - ${currentStudent.page || ""}`;
+        document.getElementById('unit-info').innerText = `Level ${currentStudent.level} : ${currentTextbook.unit || ""} - ${currentTextbook.page || ""}`;
         
         const controlArea = document.getElementById('control-area');
         const teacherBox = document.getElementById('teacher-level-box');
@@ -144,9 +146,8 @@
             teacherBox.style.display = 'none';
         }
 
-        // 🚀 動態生成下拉選單 (把該 Level 所有的頁面列出來)
+        // 🚀 1. 更新選單
         const lessonSelect = document.getElementById('lessonSelect');
-        // 優先從 currentTextbook 找 allOptions (GAS 回傳的)
         const options = currentTextbook.allOptions || [];
         if (options.length > 0) {
             lessonSelect.innerHTML = "";
@@ -156,24 +157,20 @@
                 el.innerText = opt.label;
                 lessonSelect.appendChild(el);
             });
-            // 設回目前選取的單元
-            lessonSelect.value = `${currentStudent.unit}|${currentStudent.page}`;
+            lessonSelect.value = `${currentTextbook.unit}|${currentTextbook.page}`;
         }
 
+        // 🚀 2. 更新課本圖檔
         const bookImg = document.getElementById('bookImg');
         if (currentTextbook && currentTextbook.imageUrl) {
-            let finalUrl = currentTextbook.imageUrl;
-            if (finalUrl.includes("id=")) {
-                const idMatch = finalUrl.match(/id=([-\w]{25,})/);
-                if (idMatch) finalUrl = "https://docs.google.com/thumbnail?id=" + idMatch[1] + "&sz=w1000";
-            }
-            bookImg.src = finalUrl;
+            bookImg.src = currentTextbook.imageUrl; // GAS 已經轉好縮圖網址了
             bookImg.onerror = () => { bookImg.src = "https://placehold.co/600x400?text=Image+Not+Found"; };
         }
 
+        // 🚀 3. 生成單字按鈕 (Words)
         const wordArea = document.getElementById('wordList');
-        wordArea.innerHTML = "";
-        if (currentTextbook && currentTextbook.words) {
+        wordArea.innerHTML = currentTextbook.words ? "<p style='font-size:12px; color:#999; margin:5px 0;'>Words:</p>" : "";
+        if (currentTextbook.words) {
             currentTextbook.words.split(',').forEach(w => {
                 const btn = document.createElement("button");
                 btn.className = "btn-sample";
@@ -181,21 +178,43 @@
                 btn.onclick = () => {
                     currentTarget = w.trim();
                     document.getElementById('targetSentence').innerText = `"${currentTarget}"`;
-                    
-                    // 🚀 Debug: 優先播放錄音檔，失敗才用系統合成音
-                    if (currentTextbook.wordAudio) {
-                        console.log("Debug: Playing record from sheet:", currentTextbook.wordAudio);
-                        const audio = new Audio(currentTextbook.wordAudio);
-                        audio.play().catch(e => {
-                            console.warn("Audio play failed, switching to TTS");
-                            speakText(currentTarget);
-                        });
-                    } else {
-                        speakText(currentTarget);
-                    }
+                    playAudio(currentTextbook.wordAudio, currentTarget);
                 };
                 wordArea.appendChild(btn);
             });
+        }
+
+        // 🚀 4. 生成句型按鈕 (Sentences)
+        const sentArea = document.getElementById('sentenceList');
+        sentArea.innerHTML = currentTextbook.sentences ? "<p style='font-size:12px; color:#999; margin:5px 0;'>Sentences:</p>" : "";
+        if (currentTextbook.sentences) {
+            // 句型通常用分行或分號隔開，這裡假設用換行或逗號
+            const sents = currentTextbook.sentences.split(/[,\n]/);
+            sents.forEach(s => {
+                if(!s.trim()) return;
+                const btn = document.createElement("button");
+                btn.className = "btn-sent";
+                btn.innerText = s.trim();
+                btn.onclick = () => {
+                    currentTarget = s.trim();
+                    document.getElementById('targetSentence').innerText = `"${currentTarget}"`;
+                    playAudio(currentTextbook.sentAudio, currentTarget);
+                };
+                sentArea.appendChild(btn);
+            });
+        }
+    }
+
+    // 🚀 統一播放音檔邏輯 (錄音檔優先，TTS 備援)
+    function playAudio(audioUrl, backupText) {
+        if (audioUrl) {
+            const audio = new Audio(audioUrl);
+            audio.play().catch(e => {
+                console.warn("Audio play failed, using TTS");
+                speakText(backupText);
+            });
+        } else {
+            speakText(backupText);
         }
     }
 
@@ -209,7 +228,6 @@
 
         let selectedUnit, selectedPage;
         if (isLevelChange) {
-            // 如果是切換等級，預設抓該等級的第一列
             selectedUnit = ""; 
             selectedPage = "";
         } else {
@@ -223,11 +241,8 @@
             const resp = await fetch(`${GAS_URL}?action=getTeacherData&unit=${encodeURIComponent(selectedUnit)}&page=${encodeURIComponent(selectedPage)}&level=${level}`);
             const data = await resp.json();
             
-            if (data.success || data.words) {
+            if (data.success) {
                 currentTextbook = data;
-                currentStudent.level = level;
-                currentStudent.unit = data.unit || selectedUnit;
-                currentStudent.page = data.page || selectedPage;
                 showMain();
                 document.getElementById('status-msg').innerText = "Loaded!";
             }
