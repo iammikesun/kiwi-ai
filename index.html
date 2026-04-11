@@ -295,18 +295,23 @@
         } catch (e) {}
         document.getElementById('mainBtn').innerText = "🎤 START";
     };
-function playAudio(url) {
-    if (!url) return;
-    const audio = new Audio();
-    audio.src = url;
-    audio.crossOrigin = "anonymous"; // 🚀 加入這行，請求跨域權限
+function playTeacherAudio(type) {
+    // type 可能是 'word' 或 'sent'
+    const url = (type === 'word') ? currentTextbook.wordAudio : currentTextbook.sentAudio;
     
-    audio.play().catch(e => {
-        console.error("播放失敗:", e);
-        // 如果匿名失敗，嘗試直接播放
-        const backupAudio = new Audio(url);
-        backupAudio.play();
-    });
+    if (url && url.includes("google.com")) {
+        // 🚀 情況 A：網址包含 google，代表抓到了雲端硬碟的原音檔
+        console.log(`🎵 正在播放：【老師原音】(${type})`);
+        console.log("音檔路徑:", url);
+        const audio = new Audio(url);
+        audio.play();
+    } else {
+        // 🚀 情況 B：沒有網址，或是網址不對，啟動 TTS
+        const text = (type === 'word') ? currentTextbook.words : currentTextbook.sentences;
+        console.log(`🤖 正在播放：【Kiwi AI 合成音】(${type})`);
+        console.log("語音內容:", text);
+        speakText(text); // 呼叫您原本的 TTS 函式
+    }
 }
     function speakText(text) {
         window.speechSynthesis.cancel();
