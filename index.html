@@ -1,10 +1,12 @@
 <script>
+    // 請確保此 URL 與您的 GAS 佈署網址一致
     const GAS_URL = "https://script.google.com/macros/s/AKfycbw9fFty0TC0NqhZ6mK7jSJD6_g-0cYeqOA6CHqoHTwdJkQu7WxvAWT-J92RJgtNFpvU/exec";
 
     let currentStudent = null;
     let currentTextbook = null;
     let currentTarget = "";
 
+    // --- 1. 登入邏輯 ---
     async function handleLogin() {
         const name = document.getElementById('stuName').value.trim();
         const phone = document.getElementById('stuPhone').value.trim();
@@ -18,43 +20,45 @@
         status.innerText = "Logging in... Please wait.";
         
         try {
-            const resp = await fetch(`${GAS_URL}?action=login&name=${name}&phone=${phone}`);
+            // 使用 encodeURIComponent 確保特殊字元傳輸正確
+            const resp = await fetch(`${GAS_URL}?action=login&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}`);
             const data = await resp.json();
 
             if (data.success) {
                 currentStudent = data.student;
-                currentTextbook = data.textbook || data; 
+                // 儲存整包 data 以便 showMain 同時讀取 textbook 和 allOptions
+                currentTextbook = data; 
+                status.innerText = "Success! Loading...";
                 showMain();
             } else {
                 status.innerText = "❌ " + data.msg;
             }
         } catch (e) {
+            console.error("Login Error:", e);
             status.innerText = "❌ Connection Error. Please try again.";
         }
     }
 
-   function showMain() {
-        // 🚀 強力檢測：如果沒有資料，就不執行
-        if (!currentStudent || !currentTextbook) {
-            console.error("Missing data:", { student: currentStudent, book: currentTextbook });
-            return;
-        }
+    // --- 2. 主畫面渲染 ---
+    function showMain() {
+        if (!currentStudent || !currentTextbook) return;
 
+        // 統一資料格式 (登入 vs 切換單元回傳的結構略有不同)
+        const book = currentTextbook.textbook ? currentTextbook.textbook : currentTextbook;
+        const options = currentTextbook.allOptions || [];
+
+        // 切換顯示區塊
         document.getElementById('login-container').style.display = 'none';
         document.getElementById('main-container').style.display = 'flex';
         
         document.getElementById('welcome-msg').innerText = `Hi, ${currentStudent.name}!`;
-        
-        // 🚀 修正：資料可能在 currentTextbook 裡，也可能在 currentTextbook.textbook 裡
-        const book = currentTextbook.textbook ? currentTextbook.textbook : currentTextbook;
-        const options = currentTextbook.allOptions || [];
-
         document.getElementById('unit-info').innerText = `Level ${currentStudent.level} : ${book.unit || ""} - ${book.page || ""}`;
         
         const controlArea = document.getElementById('control-area');
         const teacherBox = document.getElementById('teacher-level-box');
         
         controlArea.style.display = 'block'; 
+        // 只有 Role 為 Teacher 才會顯示 Level 切換選單
         if (currentStudent.role === "Teacher") {
             teacherBox.style.display = 'block'; 
             document.getElementById('levelSelect').value = currentStudent.level.replace("K", "");
@@ -62,7 +66,7 @@
             teacherBox.style.display = 'none';
         }
 
-        // 1. 更新選單 (Lesson Select)
+        // 🚀 A. 更新單元下拉選單
         const lessonSelect = document.getElementById('lessonSelect');
         if (options.length > 0) {
             lessonSelect.innerHTML = "";
@@ -72,18 +76,20 @@
                 el.innerText = opt.label;
                 lessonSelect.appendChild(el);
             });
-            // 設定目前選中的項目
+            // 預設選中目前這一頁
             lessonSelect.value = `${book.unit}|${book.page}`;
         }
 
-        // 2. 更新課本圖檔
+        // 🚀 B. 更新課本圖片
         const bookImg = document.getElementById('bookImg');
         if (book.imageUrl) {
             bookImg.src = book.imageUrl;
             bookImg.onerror = () => { bookImg.src = "https://placehold.co/600x400?text=Image+Not+Found"; };
+        } else {
+            bookImg.src = "";
         }
 
-        // 3. 生成單字按鈕 (處理對應音檔)
+        // 🚀 C. 生成單字按鈕 (對應音檔)
         const wordArea = document.getElementById('wordList');
         wordArea.innerHTML = book.words ? "<p style='font-size:12px; color:#999; margin:5px 0;'>Words:</p>" : "";
         if (book.words) {
@@ -103,7 +109,7 @@
             });
         }
 
-        // 4. 生成句型按鈕 (處理對應音檔)
+        // 🚀 D. 生成句型按鈕 (對應音檔)
         const sentArea = document.getElementById('sentenceList');
         sentArea.innerHTML = book.sentences ? "<p style='font-size:12px; color:#999; margin:5px 0;'>Sentences:</p>" : "";
         if (book.sentences) {
@@ -125,7 +131,7 @@
         }
     }
 
-    // 🚀 修正後的音檔播放邏輯
+    // --- 3. 音檔播放工具 ---
     function playSpecificAudio(url, backupText) {
         if (url && url !== "NONE" && url.startsWith("http")) {
             const audio = new Audio(url);
@@ -135,13 +141,11 @@
         }
     }
 
+    // --- 4. 切換單元/等級 ---
     async function changeUnit(isLevelChange = false) {
-        let level;
-        if (currentStudent.role === "Teacher") {
-            level = "K" + document.getElementById('levelSelect').value;
-        } else {
-            level = currentStudent.level;
-        }
+        let level = (currentStudent.role === "Teacher") 
+                    ? "K" + document.getElementById('levelSelect').value 
+                    : currentStudent.level;
 
         let selectedUnit = "", selectedPage = "";
         if (!isLevelChange) {
@@ -151,7 +155,7 @@
             }
         }
         
-        document.getElementById('status-msg').innerText = `Loading ${level}...`;
+        document.getElementById('status-msg').innerText = `Loading...`;
         
         try {
             const resp = await fetch(`${GAS_URL}?action=getTeacherData&unit=${encodeURIComponent(selectedUnit)}&page=${encodeURIComponent(selectedPage)}&level=${level}`);
@@ -167,6 +171,7 @@
         }
     }
 
+    // --- 5. 語音辨識與回饋 ---
     const SpeechRecognition = window.SpeechRecognition || window.webkitSpeechRecognition;
     const recognition = new SpeechRecognition();
     recognition.lang = 'en-US';
