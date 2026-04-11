@@ -33,12 +33,23 @@
         }
     }
 
-    function showMain() {
+   function showMain() {
+        // 🚀 強力檢測：如果沒有資料，就不執行
+        if (!currentStudent || !currentTextbook) {
+            console.error("Missing data:", { student: currentStudent, book: currentTextbook });
+            return;
+        }
+
         document.getElementById('login-container').style.display = 'none';
         document.getElementById('main-container').style.display = 'flex';
         
         document.getElementById('welcome-msg').innerText = `Hi, ${currentStudent.name}!`;
-        document.getElementById('unit-info').innerText = `Level ${currentStudent.level} : ${currentTextbook.unit || ""} - ${currentTextbook.page || ""}`;
+        
+        // 🚀 修正：資料可能在 currentTextbook 裡，也可能在 currentTextbook.textbook 裡
+        const book = currentTextbook.textbook ? currentTextbook.textbook : currentTextbook;
+        const options = currentTextbook.allOptions || [];
+
+        document.getElementById('unit-info').innerText = `Level ${currentStudent.level} : ${book.unit || ""} - ${book.page || ""}`;
         
         const controlArea = document.getElementById('control-area');
         const teacherBox = document.getElementById('teacher-level-box');
@@ -53,31 +64,31 @@
 
         // 1. 更新選單 (Lesson Select)
         const lessonSelect = document.getElementById('lessonSelect');
-        const options = currentTextbook.allOptions || [];
-        lessonSelect.innerHTML = "";
-        options.forEach(opt => {
-            const el = document.createElement("option");
-            el.value = opt.value;
-            el.innerText = opt.label;
-            lessonSelect.appendChild(el);
-        });
-        if (currentTextbook.unit) {
-            lessonSelect.value = `${currentTextbook.unit}|${currentTextbook.page}`;
+        if (options.length > 0) {
+            lessonSelect.innerHTML = "";
+            options.forEach(opt => {
+                const el = document.createElement("option");
+                el.value = opt.value;
+                el.innerText = opt.label;
+                lessonSelect.appendChild(el);
+            });
+            // 設定目前選中的項目
+            lessonSelect.value = `${book.unit}|${book.page}`;
         }
 
         // 2. 更新課本圖檔
         const bookImg = document.getElementById('bookImg');
-        if (currentTextbook && currentTextbook.imageUrl) {
-            bookImg.src = currentTextbook.imageUrl;
+        if (book.imageUrl) {
+            bookImg.src = book.imageUrl;
             bookImg.onerror = () => { bookImg.src = "https://placehold.co/600x400?text=Image+Not+Found"; };
         }
 
         // 3. 生成單字按鈕 (處理對應音檔)
         const wordArea = document.getElementById('wordList');
-        wordArea.innerHTML = currentTextbook.words ? "<p style='font-size:12px; color:#999; margin:5px 0;'>Words:</p>" : "";
-        if (currentTextbook.words) {
-            const words = currentTextbook.words.split(',').map(s => s.trim());
-            const audios = (currentTextbook.wordAudio || "").split(',').map(s => s.trim());
+        wordArea.innerHTML = book.words ? "<p style='font-size:12px; color:#999; margin:5px 0;'>Words:</p>" : "";
+        if (book.words) {
+            const words = String(book.words).split(',').map(s => s.trim());
+            const audios = (book.wordAudio || "").split(',').map(s => s.trim());
             
             words.forEach((w, index) => {
                 const btn = document.createElement("button");
@@ -94,10 +105,10 @@
 
         // 4. 生成句型按鈕 (處理對應音檔)
         const sentArea = document.getElementById('sentenceList');
-        sentArea.innerHTML = currentTextbook.sentences ? "<p style='font-size:12px; color:#999; margin:5px 0;'>Sentences:</p>" : "";
-        if (currentTextbook.sentences) {
-            const sents = currentTextbook.sentences.split('|').map(s => s.trim());
-            const audios = (currentTextbook.sentAudio || "").split('|').map(s => s.trim());
+        sentArea.innerHTML = book.sentences ? "<p style='font-size:12px; color:#999; margin:5px 0;'>Sentences:</p>" : "";
+        if (book.sentences) {
+            const sents = String(book.sentences).split('|').map(s => s.trim());
+            const audios = (book.sentAudio || "").split('|').map(s => s.trim());
             
             sents.forEach((s, index) => {
                 if(!s) return;
