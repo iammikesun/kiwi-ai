@@ -57,8 +57,22 @@
         <p id="unit-info" style="margin: 0; font-weight: bold; color: #999;"></p>
         
         <div id="control-area" style="display:none;">
+            <div id="teacher-level-box" style="margin-bottom: 8px; display: none;">
+                <label style="font-size: 12px; color: #e67e22; font-weight: bold;">Level:</label>
+                <select id="levelSelect" class="login-input" style="padding: 8px; font-size: 14px; margin: 0;" onchange="changeUnit()">
+                    <option value="1">K1 (Way to Go 1)</option>
+                    <option value="2">K2 (Way to Go 2)</option>
+                    <option value="3">K3 (Way to Go 3)</option>
+                    <option value="4">K4 (Way to Go 4)</option>
+                    <option value="5">K5 (Way to Go 5)</option>
+                    <option value="6">K6 (Way to Go 6)</option>
+                    <option value="7">K7 (Way to Go 7)</option>
+                </select>
+            </div>
+            
+            <label style="font-size: 12px; color: #e67e22; font-weight: bold;">Content:</label>
             <div style="display: flex; gap: 5px;">
-                <select id="unitSelect" class="login-input" style="padding: 8px; font-size: 14px; flex:1;" onchange="changeUnit()">
+                <select id="unitSelect" class="login-input" style="padding: 8px; font-size: 14px; flex:1; margin: 0;" onchange="changeUnit()">
                     <option value="Unit 1">Unit 1</option>
                     <option value="Unit 2">Unit 2</option>
                     <option value="Unit 3">Unit 3</option>
@@ -68,11 +82,13 @@
                     <option value="Unit 7">Unit 7</option>
                     <option value="Unit 8">Unit 8</option>
                 </select>
-                <select id="pageSelect" class="login-input" style="padding: 8px; font-size: 14px; flex:1;" onchange="changeUnit()">
+                <select id="pageSelect" class="login-input" style="padding: 8px; font-size: 14px; flex:1; margin: 0;" onchange="changeUnit()">
                     <option value="P.2">P.2</option>
                     <option value="P.3">P.3</option>
                     <option value="P.4">P.4</option>
                     <option value="P.5">P.5</option>
+                    <option value="P.6">P.6</option>
+                    <option value="P.16">P.16</option>
                 </select>
             </div>
         </div>
@@ -118,6 +134,7 @@
                 currentTextbook = data.textbook;
                 
                 // 同步下拉選單的值
+                if (currentStudent.level) document.getElementById('levelSelect').value = currentStudent.level;
                 if (currentStudent.unit) document.getElementById('unitSelect').value = currentStudent.unit;
                 if (currentStudent.page) document.getElementById('pageSelect').value = currentStudent.page;
                 
@@ -137,19 +154,21 @@
         document.getElementById('welcome-msg').innerText = `Hi, ${currentStudent.name}!`;
         document.getElementById('unit-info').innerText = `Level ${currentStudent.level} : ${currentStudent.unit || ""} - ${currentStudent.page || ""}`;
         
-        // --- 🔒 權限控制：如果是老師才顯示切換選單 ---
+        // --- 🔒 權限控制：學生與老師都能切換 Unit，但老師才能切換 Level ---
         const controlArea = document.getElementById('control-area');
+        const teacherBox = document.getElementById('teacher-level-box');
+        
+        controlArea.style.display = 'block'; // 大家都能換單元
         if (currentStudent.role === "Teacher" || currentStudent.id === "admin") {
-            controlArea.style.display = 'block';
+            teacherBox.style.display = 'block'; // 老師專屬等級切換
         } else {
-            controlArea.style.display = 'none';
+            teacherBox.style.display = 'none';
         }
 
-        // --- 🖼️ 圖片強化處理：解決只下載不顯示問題 ---
+        // --- 🖼️ 圖片強化處理 ---
         const bookImg = document.getElementById('bookImg');
         if (currentTextbook && currentTextbook.imageUrl) {
             let finalUrl = currentTextbook.imageUrl;
-            // 如果網址包含 export=download，轉成穩定顯示的縮圖模式
             if (finalUrl.includes("export=download")) {
                 const idMatch = finalUrl.match(/id=([-\w]{25,})/);
                 if (idMatch) finalUrl = "https://docs.google.com/thumbnail?id=" + idMatch[1] + "&sz=w1000";
@@ -175,13 +194,19 @@
         }
     }
 
-    // 更新：切換單元與頁碼功能，自動帶入學生 Level
     async function changeUnit() {
         const selectedUnit = document.getElementById('unitSelect').value;
         const selectedPage = document.getElementById('pageSelect').value;
-        const level = currentStudent.level || "4"; // 帶入目前學生的等級
         
-        document.getElementById('status-msg').innerText = `Loading ${selectedUnit} ${selectedPage}...`;
+        // 🚀 判斷等級來源：如果是老師抓選單，學生抓個人固定等級
+        let level;
+        if (currentStudent.role === "Teacher" || currentStudent.id === "admin") {
+            level = document.getElementById('levelSelect').value;
+        } else {
+            level = currentStudent.level || "1";
+        }
+        
+        document.getElementById('status-msg').innerText = `Loading Level ${level} ${selectedUnit} ${selectedPage}...`;
         
         try {
             const resp = await fetch(`${GAS_URL}?action=getTeacherData&unit=${encodeURIComponent(selectedUnit)}&page=${encodeURIComponent(selectedPage)}&level=${level}`);
@@ -189,11 +214,10 @@
             
             if (data.success || data.words) {
                 currentTextbook = data;
-                // 更新目前顯示與學生狀態
-                if(currentStudent) {
-                    currentStudent.unit = selectedUnit;
-                    currentStudent.page = selectedPage;
-                }
+                // 更新目前的狀態顯示
+                currentStudent.level = level;
+                currentStudent.unit = selectedUnit;
+                currentStudent.page = selectedPage;
                 showMain();
                 document.getElementById('status-msg').innerText = "Loaded!";
             }
