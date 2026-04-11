@@ -59,27 +59,20 @@
         <div id="control-area" style="display:none;">
             <div id="teacher-level-box" style="margin-bottom: 8px; display: none;">
                 <label style="font-size: 12px; color: #e67e22; font-weight: bold;">Level:</label>
-                <select id="levelSelect" class="login-input" style="padding: 8px; font-size: 14px; margin: 0;" onchange="changeUnit()">
-                    <option value="1">K1 (Way to Go 1)</option>
-                    <option value="2">K2 (Way to Go 2)</option>
-                    <option value="3">K3 (Way to Go 3)</option>
-                    <option value="4">K4 (Way to Go 4)</option>
-                    <option value="5">K5 (Way to Go 5)</option>
-                    <option value="6">K6 (Way to Go 6)</option>
-                    <option value="7">K7 (Way to Go 7)</option>
+                <select id="levelSelect" class="login-input" style="padding: 8px; font-size: 14px; margin: 0;" onchange="changeUnit(true)">
+                    <option value="1">K1</option>
+                    <option value="2">K2</option>
+                    <option value="3">K3</option>
+                    <option value="4">K4</option>
+                    <option value="5">K5</option>
+                    <option value="6">K6</option>
+                    <option value="7">K7</option>
                 </select>
             </div>
             
             <label style="font-size: 12px; color: #e67e22; font-weight: bold;">Select Lesson:</label>
             <div style="display: flex; gap: 5px;">
-                <select id="lessonSelect" class="login-input" style="padding: 8px; font-size: 14px; flex:1; margin: 0;" onchange="changeUnit()">
-                    <option value="Unit 1|P.2">Unit 1 P.2</option>
-                    <option value="Unit 1|P.3">Unit 1 P.3</option>
-                    <option value="Unit 1|P.4">Unit 1 P.4</option>
-                    <option value="Unit 1|P.5">Unit 1 P.5</option>
-                    <option value="Unit 1|P.6">Unit 1 P.6</option>
-                    <option value="Unit 2|P.10">Unit 2 P.10</option>
-                    <option value="Unit 3|P.16">Unit 3 P.16</option>
+                <select id="lessonSelect" class="login-input" style="padding: 8px; font-size: 14px; flex:1; margin: 0;" onchange="changeUnit(false)">
                 </select>
             </div>
         </div>
@@ -98,7 +91,7 @@
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbyuZUQKqy3LBhRpM6svyDhqMeou6oNBE3MrNNTPW4SuAHRteCyab157tfcNwlWaUkW9/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbztGV-JO5bBfqB2DYUN5SU4VYHd1UvENbYyZ376rX2vsCEgWow4gZuxPdSREZKHb4yX/exec";
 
     let currentStudent = null;
     let currentTextbook = null;
@@ -122,17 +115,8 @@
 
             if (data.success) {
                 currentStudent = data.student;
-                currentTextbook = data.textbook;
-                
-                // 同步 Level 下拉選單
-                if (currentStudent.level) document.getElementById('levelSelect').value = currentStudent.level;
-                
-                // 同步課程合併選單
-                if (currentStudent.unit && currentStudent.page) {
-                    const combinedValue = `${currentStudent.unit}|${currentStudent.page}`;
-                    document.getElementById('lessonSelect').value = combinedValue;
-                }
-                
+                // 注意：這裡我們假設 GAS 會在 login 時回傳 textbook 以及該 Level 的 allOptions
+                currentTextbook = data.textbook || data; 
                 showMain();
             } else {
                 status.innerText = "❌ " + data.msg;
@@ -155,14 +139,31 @@
         controlArea.style.display = 'block'; 
         if (currentStudent.role === "Teacher" || currentStudent.id === "admin") {
             teacherBox.style.display = 'block'; 
+            document.getElementById('levelSelect').value = currentStudent.level;
         } else {
             teacherBox.style.display = 'none';
+        }
+
+        // 🚀 動態生成下拉選單 (把該 Level 所有的頁面列出來)
+        const lessonSelect = document.getElementById('lessonSelect');
+        // 優先從 currentTextbook 找 allOptions (GAS 回傳的)
+        const options = currentTextbook.allOptions || [];
+        if (options.length > 0) {
+            lessonSelect.innerHTML = "";
+            options.forEach(opt => {
+                const el = document.createElement("option");
+                el.value = opt.value;
+                el.innerText = opt.label;
+                lessonSelect.appendChild(el);
+            });
+            // 設回目前選取的單元
+            lessonSelect.value = `${currentStudent.unit}|${currentStudent.page}`;
         }
 
         const bookImg = document.getElementById('bookImg');
         if (currentTextbook && currentTextbook.imageUrl) {
             let finalUrl = currentTextbook.imageUrl;
-            if (finalUrl.includes("export=download")) {
+            if (finalUrl.includes("id=")) {
                 const idMatch = finalUrl.match(/id=([-\w]{25,})/);
                 if (idMatch) finalUrl = "https://docs.google.com/thumbnail?id=" + idMatch[1] + "&sz=w1000";
             }
@@ -180,26 +181,43 @@
                 btn.onclick = () => {
                     currentTarget = w.trim();
                     document.getElementById('targetSentence').innerText = `"${currentTarget}"`;
-                    speakText(currentTarget);
+                    
+                    // 🚀 Debug: 優先播放錄音檔，失敗才用系統合成音
+                    if (currentTextbook.wordAudio) {
+                        console.log("Debug: Playing record from sheet:", currentTextbook.wordAudio);
+                        const audio = new Audio(currentTextbook.wordAudio);
+                        audio.play().catch(e => {
+                            console.warn("Audio play failed, switching to TTS");
+                            speakText(currentTarget);
+                        });
+                    } else {
+                        speakText(currentTarget);
+                    }
                 };
                 wordArea.appendChild(btn);
             });
         }
     }
 
-    async function changeUnit() {
-        // 🚀 從合併選單拆分單元與頁碼
-        const combinedValue = document.getElementById('lessonSelect').value;
-        const [selectedUnit, selectedPage] = combinedValue.split('|');
-        
+    async function changeUnit(isLevelChange = false) {
         let level;
         if (currentStudent.role === "Teacher" || currentStudent.id === "admin") {
             level = document.getElementById('levelSelect').value;
         } else {
             level = currentStudent.level || "1";
         }
+
+        let selectedUnit, selectedPage;
+        if (isLevelChange) {
+            // 如果是切換等級，預設抓該等級的第一列
+            selectedUnit = ""; 
+            selectedPage = "";
+        } else {
+            const combinedValue = document.getElementById('lessonSelect').value;
+            [selectedUnit, selectedPage] = combinedValue.split('|');
+        }
         
-        document.getElementById('status-msg').innerText = `Loading Level ${level} ${selectedUnit} ${selectedPage}...`;
+        document.getElementById('status-msg').innerText = `Loading Level ${level}...`;
         
         try {
             const resp = await fetch(`${GAS_URL}?action=getTeacherData&unit=${encodeURIComponent(selectedUnit)}&page=${encodeURIComponent(selectedPage)}&level=${level}`);
@@ -208,12 +226,9 @@
             if (data.success || data.words) {
                 currentTextbook = data;
                 currentStudent.level = level;
-                currentStudent.unit = selectedUnit;
-                currentStudent.page = selectedPage;
+                currentStudent.unit = data.unit || selectedUnit;
+                currentStudent.page = data.page || selectedPage;
                 showMain();
-                
-                // 保持選單值正確
-                document.getElementById('lessonSelect').value = `${selectedUnit}|${selectedPage}`;
                 document.getElementById('status-msg').innerText = "Loaded!";
             }
         } catch (e) {
