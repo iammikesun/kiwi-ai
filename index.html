@@ -92,7 +92,7 @@
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbzgv6S7t4Hn17v9VIThOVfGZOTkWknYZd2txjfspwzGl4uPsYCc3QLGp0P7sxJacPXf/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxFo56z0Cz_yTiEjTv5Z6jwAaccwbC6z0-ipJ_F46FRUy46KQflGYH0f_z1WxBznq0/exec";
 
     let currentStudent = null;
     let currentTextbook = null;
@@ -295,7 +295,19 @@
         } catch (e) {}
         document.getElementById('mainBtn').innerText = "🎤 START";
     };
-
+function playAudio(url) {
+    if (!url) return;
+    const audio = new Audio();
+    audio.src = url;
+    audio.crossOrigin = "anonymous"; // 🚀 加入這行，請求跨域權限
+    
+    audio.play().catch(e => {
+        console.error("播放失敗:", e);
+        // 如果匿名失敗，嘗試直接播放
+        const backupAudio = new Audio(url);
+        backupAudio.play();
+    });
+}
     function speakText(text) {
         window.speechSynthesis.cancel();
         const utt = new SpeechSynthesisUtterance(text);
