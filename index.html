@@ -1,100 +1,5 @@
-<!DOCTYPE html>
-<html>
-<head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no">
-    <script src="https://cdn.jsdelivr.net/npm/canvas-confetti@1.5.1/dist/confetti.browser.min.js"></script>
-    <style>
-        /* 基礎樣式 */
-        body { font-family: 'Segoe UI', sans-serif; background: #FFF9E1; margin: 0; padding: 0; }
-        
-        /* 登入區塊 */
-        #login-container { 
-            display: flex; flex-direction: column; align-items: center; justify-content: center; 
-            height: 100vh; background: white; text-align: center; padding: 20px;
-        }
-        .login-box { max-width: 400px; width: 100%; padding: 30px; border-radius: 25px; box-shadow: 0 10px 30px rgba(0,0,0,0.1); background: #FFFEF5; }
-        .login-input { width: 100%; padding: 15px; margin: 10px 0; border-radius: 12px; border: 2px solid #FFE082; font-size: 16px; box-sizing: border-box; }
-        .btn-login { width: 100%; background: #FF5A5A; color: white; border: none; padding: 15px; border-radius: 12px; font-size: 18px; font-weight: bold; cursor: pointer; margin-top: 10px; }
-        
-        /* 主畫面區塊 (預設隱藏) */
-        #main-container { display: none; flex-direction: row; gap: 15px; width: 100vw; height: 100vh; background: white; padding: 15px; box-sizing: border-box; }
-        .ebook-section { flex: 2; display: flex; align-items: center; justify-content: center; background: #f0f0f0; border-radius: 20px; overflow: hidden; }
-        .ebook-img { max-width: 100%; max-height: 100%; object-fit: contain; }
-        .control-section { flex: 1; display: flex; flex-direction: column; gap: 10px; min-width: 320px; background: #FFFEF5; padding: 20px; border-radius: 20px; box-shadow: -5px 0 15px rgba(0,0,0,0.05); overflow-y: auto; }
-        
-        /* 控制按鈕與元件 */
-        .btn-sample { background: white; color: #4A90E2; border: 2px solid #4A90E2; padding: 10px 18px; border-radius: 20px; font-size: 15px; font-weight: bold; cursor: pointer; margin: 4px; }
-        .btn-sent { background: #E3F2FD; color: #1976D2; border: 2px solid #1976D2; padding: 12px 20px; border-radius: 12px; font-size: 16px; font-weight: 500; cursor: pointer; margin: 6px 0; text-align: left; width: 100%; }
-        .target-sentence { font-size: 24px; color: #2C3E50; font-weight: bold; padding: 10px; text-align: center; border-bottom: 2px dashed #FFE082; }
-        .feedback-box { display: flex; align-items: flex-start; gap: 12px; background: white; padding: 15px; border-radius: 15px; border-left: 6px solid #FFE082; min-height: 80px; margin-top: 10px; }
-        .btn-mic { width: 100%; background: #FF5A5A; color: white; border: none; padding: 20px; border-radius: 50px; font-size: 24px; font-weight: bold; cursor: pointer; margin-top: auto; }
-        
-        /* 權限遮罩樣式 */
-        #control-area { background: #fdf2e9; padding: 10px; border-radius: 15px; border: 1px dashed #e67e22; margin-bottom: 5px; }
-
-        @media (max-width: 900px) { #main-container { flex-direction: column; overflow-y: auto; } .ebook-section { height: 40vh; } }
-    </style>
-</head>
-<body>
-
-<div id="login-container">
-    <div class="login-box">
-        <img src="https://cdn-icons-png.flaticon.com/512/826/826913.png" width="80">
-        <h2 style="color: #FF5A5A;">Kiwi AI Classroom</h2>
-        <input type="text" id="stuName" class="login-input" placeholder="English Name (e.g. Mike)">
-        <input type="tel" id="stuPhone" class="login-input" placeholder="Phone Number">
-        <button class="btn-login" onclick="handleLogin()">Login</button>
-        <p id="login-status" style="font-size: 14px; color: #999;"></p>
-    </div>
-</div>
-
-<div id="main-container">
-    <div class="ebook-section">
-        <img id="bookImg" class="ebook-img" src="" alt="Textbook">
-    </div>
-    <div class="control-section">
-        <h3 id="welcome-msg" style="margin: 0; color: #e67e22;">Welcome!</h3>
-        <p id="unit-info" style="margin: 0; font-weight: bold; color: #999;"></p>
-        
-        <div id="control-area" style="display:none;">
-            <div id="teacher-level-box" style="margin-bottom: 8px; display: none;">
-                <label style="font-size: 12px; color: #e67e22; font-weight: bold;">Level:</label>
-                <select id="levelSelect" class="login-input" style="padding: 8px; font-size: 14px; margin: 0;" onchange="changeUnit(true)">
-                    <option value="1">K1</option>
-                    <option value="2">K2</option>
-                    <option value="3">K3</option>
-                    <option value="4">K4</option>
-                    <option value="5">K5</option>
-                    <option value="6">K6</option>
-                    <option value="7">K7</option>
-                </select>
-            </div>
-            
-            <label style="font-size: 12px; color: #e67e22; font-weight: bold;">Select Lesson:</label>
-            <div style="display: flex; gap: 5px;">
-                <select id="lessonSelect" class="login-input" style="padding: 8px; font-size: 14px; flex:1; margin: 0;" onchange="changeUnit(false)">
-                </select>
-            </div>
-        </div>
-        
-        <div id="targetSentence" class="target-sentence">Ready to Start?</div>
-        
-        <div id="wordList" style="margin-top: 10px;"></div>
-        <div id="sentenceList" style="margin-top: 10px;"></div>
-
-        <div class="feedback-box">
-            <img src="https://cdn-icons-png.flaticon.com/512/826/826913.png" width="50">
-            <div id="feedback" style="color: #e67e22; font-size: 18px;">Hello! I am Kiwi. Pick a word to practice!</div>
-        </div>
-        
-        <button id="mainBtn" class="btn-mic" onclick="toggleRecognition()">🎤 START</button>
-        <p id="status-msg" style="text-align: center; font-style: italic; color: #999;"></p>
-    </div>
-</div>
-
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxIqZaeLDoM-ecpVjonQeiDJ6uA4pjyTlp2IFU7ufxt1EbE3iy2kAbDp9Rzed5DIBSJ/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbw9fFty0TC0NqhZ6mK7jSJD6_g-0cYeqOA6CHqoHTwdJkQu7WxvAWT-J92RJgtNFpvU/exec";
 
     let currentStudent = null;
     let currentTextbook = null;
@@ -139,80 +44,81 @@
         const teacherBox = document.getElementById('teacher-level-box');
         
         controlArea.style.display = 'block'; 
-        if (currentStudent.role === "Teacher" || currentStudent.id === "admin") {
+        if (currentStudent.role === "Teacher") {
             teacherBox.style.display = 'block'; 
-            document.getElementById('levelSelect').value = currentStudent.level;
+            document.getElementById('levelSelect').value = currentStudent.level.replace("K", "");
         } else {
             teacherBox.style.display = 'none';
         }
 
-        // 🚀 1. 更新選單
+        // 1. 更新選單 (Lesson Select)
         const lessonSelect = document.getElementById('lessonSelect');
         const options = currentTextbook.allOptions || [];
-        if (options.length > 0) {
-            lessonSelect.innerHTML = "";
-            options.forEach(opt => {
-                const el = document.createElement("option");
-                el.value = opt.value;
-                el.innerText = opt.label;
-                lessonSelect.appendChild(el);
-            });
+        lessonSelect.innerHTML = "";
+        options.forEach(opt => {
+            const el = document.createElement("option");
+            el.value = opt.value;
+            el.innerText = opt.label;
+            lessonSelect.appendChild(el);
+        });
+        if (currentTextbook.unit) {
             lessonSelect.value = `${currentTextbook.unit}|${currentTextbook.page}`;
         }
 
-        // 🚀 2. 更新課本圖檔
+        // 2. 更新課本圖檔
         const bookImg = document.getElementById('bookImg');
         if (currentTextbook && currentTextbook.imageUrl) {
-            bookImg.src = currentTextbook.imageUrl; // GAS 已經轉好縮圖網址了
+            bookImg.src = currentTextbook.imageUrl;
             bookImg.onerror = () => { bookImg.src = "https://placehold.co/600x400?text=Image+Not+Found"; };
         }
 
-        // 🚀 3. 生成單字按鈕 (Words)
+        // 3. 生成單字按鈕 (處理對應音檔)
         const wordArea = document.getElementById('wordList');
         wordArea.innerHTML = currentTextbook.words ? "<p style='font-size:12px; color:#999; margin:5px 0;'>Words:</p>" : "";
         if (currentTextbook.words) {
-            currentTextbook.words.split(',').forEach(w => {
+            const words = currentTextbook.words.split(',').map(s => s.trim());
+            const audios = (currentTextbook.wordAudio || "").split(',').map(s => s.trim());
+            
+            words.forEach((w, index) => {
                 const btn = document.createElement("button");
                 btn.className = "btn-sample";
-                btn.innerText = w.trim();
+                btn.innerText = w;
                 btn.onclick = () => {
-                    currentTarget = w.trim();
+                    currentTarget = w;
                     document.getElementById('targetSentence').innerText = `"${currentTarget}"`;
-                    playAudio(currentTextbook.wordAudio, currentTarget);
+                    playSpecificAudio(audios[index], w);
                 };
                 wordArea.appendChild(btn);
             });
         }
 
-        // 🚀 4. 生成句型按鈕 (Sentences)
+        // 4. 生成句型按鈕 (處理對應音檔)
         const sentArea = document.getElementById('sentenceList');
         sentArea.innerHTML = currentTextbook.sentences ? "<p style='font-size:12px; color:#999; margin:5px 0;'>Sentences:</p>" : "";
         if (currentTextbook.sentences) {
-            // 句型通常用分行或分號隔開，這裡假設用換行或逗號
-            const sents = currentTextbook.sentences.split(/[,\n]/);
-            sents.forEach(s => {
-                if(!s.trim()) return;
+            const sents = currentTextbook.sentences.split('|').map(s => s.trim());
+            const audios = (currentTextbook.sentAudio || "").split('|').map(s => s.trim());
+            
+            sents.forEach((s, index) => {
+                if(!s) return;
                 const btn = document.createElement("button");
                 btn.className = "btn-sent";
-                btn.innerText = s.trim();
+                btn.innerText = s;
                 btn.onclick = () => {
-                    currentTarget = s.trim();
+                    currentTarget = s;
                     document.getElementById('targetSentence').innerText = `"${currentTarget}"`;
-                    playAudio(currentTextbook.sentAudio, currentTarget);
+                    playSpecificAudio(audios[index], s);
                 };
                 sentArea.appendChild(btn);
             });
         }
     }
 
-    // 🚀 統一播放音檔邏輯 (錄音檔優先，TTS 備援)
-    function playAudio(audioUrl, backupText) {
-        if (audioUrl) {
-            const audio = new Audio(audioUrl);
-            audio.play().catch(e => {
-                console.warn("Audio play failed, using TTS");
-                speakText(backupText);
-            });
+    // 🚀 修正後的音檔播放邏輯
+    function playSpecificAudio(url, backupText) {
+        if (url && url !== "NONE" && url.startsWith("http")) {
+            const audio = new Audio(url);
+            audio.play().catch(e => speakText(backupText));
         } else {
             speakText(backupText);
         }
@@ -220,22 +126,21 @@
 
     async function changeUnit(isLevelChange = false) {
         let level;
-        if (currentStudent.role === "Teacher" || currentStudent.id === "admin") {
-            level = document.getElementById('levelSelect').value;
+        if (currentStudent.role === "Teacher") {
+            level = "K" + document.getElementById('levelSelect').value;
         } else {
-            level = currentStudent.level || "1";
+            level = currentStudent.level;
         }
 
-        let selectedUnit, selectedPage;
-        if (isLevelChange) {
-            selectedUnit = ""; 
-            selectedPage = "";
-        } else {
+        let selectedUnit = "", selectedPage = "";
+        if (!isLevelChange) {
             const combinedValue = document.getElementById('lessonSelect').value;
-            [selectedUnit, selectedPage] = combinedValue.split('|');
+            if (combinedValue.includes('|')) {
+                [selectedUnit, selectedPage] = combinedValue.split('|');
+            }
         }
         
-        document.getElementById('status-msg').innerText = `Loading Level ${level}...`;
+        document.getElementById('status-msg').innerText = `Loading ${level}...`;
         
         try {
             const resp = await fetch(`${GAS_URL}?action=getTeacherData&unit=${encodeURIComponent(selectedUnit)}&page=${encodeURIComponent(selectedPage)}&level=${level}`);
@@ -256,9 +161,11 @@
     recognition.lang = 'en-US';
 
     function toggleRecognition() {
-        recognition.start();
-        document.getElementById('mainBtn').innerText = "🛑 LISTENING...";
-        document.getElementById('status-msg').innerText = "Kiwi is listening...";
+        try {
+            recognition.start();
+            document.getElementById('mainBtn').innerText = "🛑 LISTENING...";
+            document.getElementById('status-msg').innerText = "Kiwi is listening...";
+        } catch (e) { console.error(e); }
     }
 
     recognition.onresult = async (event) => {
@@ -276,7 +183,7 @@
             const resp = await fetch(`${GAS_URL}?${params.toString()}`);
             const data = await resp.json();
             
-            document.getElementById('feedback').innerText = data.feedback + "\n" + (data.translation || "");
+            document.getElementById('feedback').innerText = data.feedback + (data.translation ? "\n" + data.translation : "");
             if (data.score >= 4) confetti({ particleCount: 100, spread: 70, origin: { y: 0.6 } });
             
             if (data.audio) {
@@ -295,5 +202,3 @@
         window.speechSynthesis.speak(utt);
     }
 </script>
-</body>
-</html>
