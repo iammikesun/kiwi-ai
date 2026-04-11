@@ -70,25 +70,16 @@
                 </select>
             </div>
             
-            <label style="font-size: 12px; color: #e67e22; font-weight: bold;">Content:</label>
+            <label style="font-size: 12px; color: #e67e22; font-weight: bold;">Select Lesson:</label>
             <div style="display: flex; gap: 5px;">
-                <select id="unitSelect" class="login-input" style="padding: 8px; font-size: 14px; flex:1; margin: 0;" onchange="changeUnit()">
-                    <option value="Unit 1">Unit 1</option>
-                    <option value="Unit 2">Unit 2</option>
-                    <option value="Unit 3">Unit 3</option>
-                    <option value="Unit 4">Unit 4</option>
-                    <option value="Unit 5">Unit 5</option>
-                    <option value="Unit 6">Unit 6</option>
-                    <option value="Unit 7">Unit 7</option>
-                    <option value="Unit 8">Unit 8</option>
-                </select>
-                <select id="pageSelect" class="login-input" style="padding: 8px; font-size: 14px; flex:1; margin: 0;" onchange="changeUnit()">
-                    <option value="P.2">P.2</option>
-                    <option value="P.3">P.3</option>
-                    <option value="P.4">P.4</option>
-                    <option value="P.5">P.5</option>
-                    <option value="P.6">P.6</option>
-                    <option value="P.16">P.16</option>
+                <select id="lessonSelect" class="login-input" style="padding: 8px; font-size: 14px; flex:1; margin: 0;" onchange="changeUnit()">
+                    <option value="Unit 1|P.2">Unit 1 P.2</option>
+                    <option value="Unit 1|P.3">Unit 1 P.3</option>
+                    <option value="Unit 1|P.4">Unit 1 P.4</option>
+                    <option value="Unit 1|P.5">Unit 1 P.5</option>
+                    <option value="Unit 1|P.6">Unit 1 P.6</option>
+                    <option value="Unit 2|P.10">Unit 2 P.10</option>
+                    <option value="Unit 3|P.16">Unit 3 P.16</option>
                 </select>
             </div>
         </div>
@@ -133,10 +124,14 @@
                 currentStudent = data.student;
                 currentTextbook = data.textbook;
                 
-                // 同步下拉選單的值
+                // 同步 Level 下拉選單
                 if (currentStudent.level) document.getElementById('levelSelect').value = currentStudent.level;
-                if (currentStudent.unit) document.getElementById('unitSelect').value = currentStudent.unit;
-                if (currentStudent.page) document.getElementById('pageSelect').value = currentStudent.page;
+                
+                // 同步課程合併選單
+                if (currentStudent.unit && currentStudent.page) {
+                    const combinedValue = `${currentStudent.unit}|${currentStudent.page}`;
+                    document.getElementById('lessonSelect').value = combinedValue;
+                }
                 
                 showMain();
             } else {
@@ -154,18 +149,16 @@
         document.getElementById('welcome-msg').innerText = `Hi, ${currentStudent.name}!`;
         document.getElementById('unit-info').innerText = `Level ${currentStudent.level} : ${currentStudent.unit || ""} - ${currentStudent.page || ""}`;
         
-        // --- 🔒 權限控制：學生與老師都能切換 Unit，但老師才能切換 Level ---
         const controlArea = document.getElementById('control-area');
         const teacherBox = document.getElementById('teacher-level-box');
         
-        controlArea.style.display = 'block'; // 大家都能換單元
+        controlArea.style.display = 'block'; 
         if (currentStudent.role === "Teacher" || currentStudent.id === "admin") {
-            teacherBox.style.display = 'block'; // 老師專屬等級切換
+            teacherBox.style.display = 'block'; 
         } else {
             teacherBox.style.display = 'none';
         }
 
-        // --- 🖼️ 圖片強化處理 ---
         const bookImg = document.getElementById('bookImg');
         if (currentTextbook && currentTextbook.imageUrl) {
             let finalUrl = currentTextbook.imageUrl;
@@ -195,10 +188,10 @@
     }
 
     async function changeUnit() {
-        const selectedUnit = document.getElementById('unitSelect').value;
-        const selectedPage = document.getElementById('pageSelect').value;
+        // 🚀 從合併選單拆分單元與頁碼
+        const combinedValue = document.getElementById('lessonSelect').value;
+        const [selectedUnit, selectedPage] = combinedValue.split('|');
         
-        // 🚀 判斷等級來源：如果是老師抓選單，學生抓個人固定等級
         let level;
         if (currentStudent.role === "Teacher" || currentStudent.id === "admin") {
             level = document.getElementById('levelSelect').value;
@@ -214,11 +207,13 @@
             
             if (data.success || data.words) {
                 currentTextbook = data;
-                // 更新目前的狀態顯示
                 currentStudent.level = level;
                 currentStudent.unit = selectedUnit;
                 currentStudent.page = selectedPage;
                 showMain();
+                
+                // 保持選單值正確
+                document.getElementById('lessonSelect').value = `${selectedUnit}|${selectedPage}`;
                 document.getElementById('status-msg').innerText = "Loaded!";
             }
         } catch (e) {
