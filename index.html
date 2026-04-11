@@ -29,6 +29,9 @@
         .feedback-box { display: flex; align-items: flex-start; gap: 12px; background: white; padding: 15px; border-radius: 15px; border-left: 6px solid #FFE082; min-height: 80px; margin-top: 10px; }
         .btn-mic { width: 100%; background: #FF5A5A; color: white; border: none; padding: 20px; border-radius: 50px; font-size: 24px; font-weight: bold; cursor: pointer; margin-top: auto; }
         
+        /* 權限遮罩樣式 */
+        #control-area { background: #fdf2e9; padding: 10px; border-radius: 15px; border: 1px dashed #e67e22; margin-bottom: 5px; }
+
         @media (max-width: 900px) { #main-container { flex-direction: column; overflow-y: auto; } .ebook-section { height: 40vh; } }
     </style>
 </head>
@@ -53,17 +56,25 @@
         <h3 id="welcome-msg" style="margin: 0; color: #e67e22;">Welcome!</h3>
         <p id="unit-info" style="margin: 0; font-weight: bold; color: #999;"></p>
         
-        <div style="margin: 5px 0;">
-            <select id="unitSelect" class="login-input" style="padding: 8px; font-size: 14px;" onchange="changeUnit()">
-                <option value="Unit 1">Unit 1</option>
-                <option value="Unit 2">Unit 2</option>
-                <option value="Unit 3">Unit 3</option>
-                <option value="Unit 4">Unit 4</option>
-                <option value="Unit 5">Unit 5</option>
-                <option value="Unit 6">Unit 6</option>
-                <option value="Unit 7">Unit 7</option>
-                <option value="Unit 8">Unit 8</option>
-            </select>
+        <div id="control-area" style="display:none;">
+            <div style="display: flex; gap: 5px;">
+                <select id="unitSelect" class="login-input" style="padding: 8px; font-size: 14px; flex:1;" onchange="changeUnit()">
+                    <option value="Unit 1">Unit 1</option>
+                    <option value="Unit 2">Unit 2</option>
+                    <option value="Unit 3">Unit 3</option>
+                    <option value="Unit 4">Unit 4</option>
+                    <option value="Unit 5">Unit 5</option>
+                    <option value="Unit 6">Unit 6</option>
+                    <option value="Unit 7">Unit 7</option>
+                    <option value="Unit 8">Unit 8</option>
+                </select>
+                <select id="pageSelect" class="login-input" style="padding: 8px; font-size: 14px; flex:1;" onchange="changeUnit()">
+                    <option value="P.2">P.2</option>
+                    <option value="P.3">P.3</option>
+                    <option value="P.4">P.4</option>
+                    <option value="P.5">P.5</option>
+                </select>
+            </div>
         </div>
         
         <div id="targetSentence" class="target-sentence">Ready to Start?</div>
@@ -105,10 +116,11 @@
             if (data.success) {
                 currentStudent = data.student;
                 currentTextbook = data.textbook;
+                
                 // 同步下拉選單的值
-                if (currentStudent.unit) {
-                    document.getElementById('unitSelect').value = currentStudent.unit;
-                }
+                if (currentStudent.unit) document.getElementById('unitSelect').value = currentStudent.unit;
+                if (currentStudent.page) document.getElementById('pageSelect').value = currentStudent.page;
+                
                 showMain();
             } else {
                 status.innerText = "❌ " + data.msg;
@@ -123,13 +135,27 @@
         document.getElementById('main-container').style.display = 'flex';
         
         document.getElementById('welcome-msg').innerText = `Hi, ${currentStudent.name}!`;
-        document.getElementById('unit-info').innerText = `${currentStudent.unit || ""} - ${currentStudent.page || ""}`;
+        document.getElementById('unit-info').innerText = `Level ${currentStudent.level} : ${currentStudent.unit || ""} - ${currentStudent.page || ""}`;
         
-        // 設定圖片並加入錯誤處理
+        // --- 🔒 權限控制：如果是老師才顯示切換選單 ---
+        const controlArea = document.getElementById('control-area');
+        if (currentStudent.role === "Teacher" || currentStudent.id === "admin") {
+            controlArea.style.display = 'block';
+        } else {
+            controlArea.style.display = 'none';
+        }
+
+        // --- 🖼️ 圖片強化處理：解決只下載不顯示問題 ---
         const bookImg = document.getElementById('bookImg');
         if (currentTextbook && currentTextbook.imageUrl) {
-            bookImg.src = currentTextbook.imageUrl;
-            bookImg.onerror = () => { bookImg.src = "https://via.placeholder.com/600x400?text=Image+Not+Found"; };
+            let finalUrl = currentTextbook.imageUrl;
+            // 如果網址包含 export=download，轉成穩定顯示的縮圖模式
+            if (finalUrl.includes("export=download")) {
+                const idMatch = finalUrl.match(/id=([-\w]{25,})/);
+                if (idMatch) finalUrl = "https://docs.google.com/thumbnail?id=" + idMatch[1] + "&sz=w1000";
+            }
+            bookImg.src = finalUrl;
+            bookImg.onerror = () => { bookImg.src = "https://placehold.co/600x400?text=Image+Not+Found"; };
         }
 
         const wordArea = document.getElementById('wordList');
@@ -149,21 +175,27 @@
         }
     }
 
-    // 新增：切換單元功能
+    // 更新：切換單元與頁碼功能，自動帶入學生 Level
     async function changeUnit() {
         const selectedUnit = document.getElementById('unitSelect').value;
-        document.getElementById('status-msg').innerText = "Loading " + selectedUnit + "...";
+        const selectedPage = document.getElementById('pageSelect').value;
+        const level = currentStudent.level || "4"; // 帶入目前學生的等級
+        
+        document.getElementById('status-msg').innerText = `Loading ${selectedUnit} ${selectedPage}...`;
         
         try {
-            const resp = await fetch(`${GAS_URL}?action=getTeacherData&unit=${encodeURIComponent(selectedUnit)}&level=4`);
+            const resp = await fetch(`${GAS_URL}?action=getTeacherData&unit=${encodeURIComponent(selectedUnit)}&page=${encodeURIComponent(selectedPage)}&level=${level}`);
             const data = await resp.json();
             
             if (data.success || data.words) {
                 currentTextbook = data;
-                // 更新顯示的單元文字
-                if(currentStudent) currentStudent.unit = selectedUnit;
+                // 更新目前顯示與學生狀態
+                if(currentStudent) {
+                    currentStudent.unit = selectedUnit;
+                    currentStudent.page = selectedPage;
+                }
                 showMain();
-                document.getElementById('status-msg').innerText = "Unit Loaded!";
+                document.getElementById('status-msg').innerText = "Loaded!";
             }
         } catch (e) {
             document.getElementById('status-msg').innerText = "Load Failed!";
@@ -187,7 +219,8 @@
         const params = new URLSearchParams({
             action: "processSpeech",
             studentText: transcript,
-            target: currentTarget || "Hello"
+            target: currentTarget || "Hello",
+            name: currentStudent ? currentStudent.name : "Student"
         });
 
         try {
