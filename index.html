@@ -209,26 +209,62 @@
         }
     }
 
-    async function changeUnit(isLevelChange = false) {
+   async function changeUnit(isLevelChange = false) {
+        const statusEl = document.getElementById('status-msg');
+        const lessonSelect = document.getElementById('lessonSelect');
+        const levelSelect = document.getElementById('levelSelect');
+
+        // 1. 確定等級
         let level = (currentStudent.role === "Teacher") 
-                    ? "K" + document.getElementById('levelSelect').value 
+                    ? "K" + levelSelect.value 
                     : currentStudent.level;
 
         let selectedUnit = "", selectedPage = "";
-        if (!isLevelChange) {
-            [selectedUnit, selectedPage] = document.getElementById('lessonSelect').value.split('|');
-        }
         
-        document.getElementById('status-msg').innerText = "Loading...";
+        // 2. 確定單元與頁碼
+        if (!isLevelChange && lessonSelect.value) {
+            const parts = lessonSelect.value.split('|');
+            if (parts.length === 2) {
+                [selectedUnit, selectedPage] = parts;
+            }
+        }
+
+        // 🚀 DEBUG 1: 印出準備送出的參數
+        console.log("--- ChangeUnit Debug ---");
+        console.log("Level Target:", level);
+        console.log("Unit Target:", selectedUnit);
+        console.log("Page Target:", selectedPage);
+        console.log("Is Level Change:", isLevelChange);
+
+        statusEl.innerText = `Loading ${level}...`;
+        
         try {
-            const resp = await fetch(`${GAS_URL}?action=getTeacherData&unit=${encodeURIComponent(selectedUnit)}&page=${encodeURIComponent(selectedPage)}&level=${level}`);
+            const timestamp = new Date().getTime();
+            const fetchUrl = `${GAS_URL}?action=getTeacherData&unit=${encodeURIComponent(selectedUnit)}&page=${encodeURIComponent(selectedPage)}&level=${level}&_=${timestamp}`;
+            
+            // 🚀 DEBUG 2: 印出完整 URL (您可以直接複製這個網址去瀏覽器開開看)
+            console.log("Fetch URL:", fetchUrl);
+
+            const resp = await fetch(fetchUrl);
             const data = await resp.json();
+            
+            // 🚀 DEBUG 3: 印出後端回傳的原始資料
+            console.log("GAS Response:", data);
+
             if (data.success) {
                 currentTextbook = data;
+                // 如果是老師切換等級，更新一下當前學生的等級記錄
+                if (currentStudent.role === "Teacher") currentStudent.level = level;
+                
                 showMain();
+                statusEl.innerText = "Loaded!";
+            } else {
+                console.error("GAS Error Msg:", data.msg);
+                statusEl.innerText = "Error: " + data.msg;
             }
         } catch (e) {
-            document.getElementById('status-msg').innerText = "Load error";
+            console.error("Fetch Exception:", e);
+            statusEl.innerText = "Load Failed (Network Error)";
         }
     }
 
