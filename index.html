@@ -213,13 +213,23 @@ function playTeacherAudio(type) {
       speakText((type === 'word') ? currentTextbook.words : currentTextbook.sentences);
   }
 }
-    function playSpecificAudio(url, backupText) {
-        if (url && url !== "NONE" && url.startsWith("http")) {
-            new Audio(url).play().catch(() => speakText(backupText));
-        } else {
+    function playSpecificAudio(audioData, backupText) {
+    console.log("嘗試播放資料長度:", audioData ? audioData.length : 0);
+
+    // 💡 判斷傳進來的是不是我們轉好的 Base64 字串
+    if (audioData && audioData.startsWith("data:audio")) {
+        console.log("✅ 成功識別 Base64，準備播放");
+        const audio = new Audio(audioData);
+        audio.play().catch(e => {
+            console.error("播放失敗，嘗試 AI 備援:", e);
             speakText(backupText);
-        }
+        });
+    } else {
+        // 如果傳進來的是網址或是空的，就走 AI 語音
+        console.log("⚠️ 非 Base64 數據，使用 AI 語音");
+        speakText(backupText);
     }
+}
 
    async function changeUnit(isLevelChange = false) {
         const statusEl = document.getElementById('status-msg');
