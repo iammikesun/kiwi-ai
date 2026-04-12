@@ -92,42 +92,59 @@
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwMLJcmB8TeYI15bPAtiZ1JUvhDcSSCUwTmWYM-4EsqpW9V3DA6C9ZoUomqrq_7MZf-/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbwsbPrH7I9iNzcCBMhfH-KeRuZ6hOLAMjkaBZT0RsuqqO3tBGwWa-HNaq7iyDkPHaou/exec";
 
     let currentStudent = null;
     let currentTextbook = null;
     let currentTarget = "";
 
     async function handleLogin() {
-        const name = document.getElementById('stuName').value.trim();
-        const phone = document.getElementById('stuPhone').value.trim();
-        const status = document.getElementById('login-status');
+    const name = document.getElementById('stuName').value.trim();
+    const phone = document.getElementById('stuPhone').value.trim();
+    const status = document.getElementById('login-status');
 
-        if (!name || !phone) {
-            status.innerText = "Please fill in both name and phone.";
-            return;
-        }
-
-        status.innerText = "Logging in... Please wait.";
-        
-        try {
-            const resp = await fetch(`${GAS_URL}?action=login&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}`);
-            const data = await resp.json();
-
-            if (data.success) {
-                currentStudent = data.student;
-                currentTextbook = data; 
-                showMain();
-            } else {
-                status.innerText = "❌ " + data.msg;
-            }
-        } catch (e) {
-            status.innerText = "❌ Connection Error.";
-        }
+    if (!name || !phone) {
+        status.innerText = "Please fill in both name and phone.";
+        return;
     }
 
+    status.innerText = "Logging in... Please wait.";
+    
+    try {
+        const resp = await fetch(`${GAS_URL}?action=login&name=${encodeURIComponent(name)}&phone=${encodeURIComponent(phone)}`);
+        const responseData = await resp.json(); // ✅ 這裡先定義好 responseData
+
+        console.log("🚀 登入回傳完整資料:", responseData);
+
+        if (responseData.success) {
+            // ✅ 修正：確保 currentStudent 拿到資料，如果 data.student 是空的就拿 data 本身
+            currentStudent = responseData.student || responseData; 
+            currentTextbook = responseData; 
+            showMain();
+        } else {
+            status.innerText = "❌ " + responseData.msg;
+        }
+    } catch (e) {
+        console.error("Login Error:", e);
+        status.innerText = "❌ Connection Error.";
+    }
+}
     function showMain() {
         if (!currentStudent || !currentTextbook) return;
+
+        // 1. 先定義好元件，才不會報 initialization 錯誤
+        const controlArea = document.getElementById('control-area');
+        const teacherBox = document.getElementById('teacher-level-box');
+        const levelSelect = document.getElementById('levelSelect');
+
+        // 2. 修正 role 抓取邏輯 (增加對 data 本身屬性的檢查)
+        const myRole = currentStudent.role || currentTextbook.role || "";
+        const myLevel = currentStudent.level || currentTextbook.level || "K2";
+
+        // 🚀 診斷報告 (放在定義之後)
+        console.log("=== 🕵️ 終極診斷 ===");
+        console.log("Role:", myRole);
+        console.log("Level:", myLevel);
 
         const book = currentTextbook.textbook ? currentTextbook.textbook : currentTextbook;
         const options = currentTextbook.allOptions || [];
@@ -135,16 +152,18 @@
         document.getElementById('login-container').style.display = 'none';
         document.getElementById('main-container').style.display = 'flex';
         
-        document.getElementById('welcome-msg').innerText = `Hi, ${currentStudent.name}!`;
-        document.getElementById('unit-info').innerText = `Level ${currentStudent.level} : ${book.unit || ""} - ${book.page || ""}`;
-        
-        const controlArea = document.getElementById('control-area');
-        const teacherBox = document.getElementById('teacher-level-box');
+        document.getElementById('welcome-msg').innerText = `Hi, ${currentStudent.name || 'User'}!`;
+        document.getElementById('unit-info').innerText = `Level ${myLevel} : ${book.unit || ""} - ${book.page || ""}`;
         
         controlArea.style.display = 'block'; 
-        if (currentStudent.role === "Teacher") {
+
+        // 🚀 修正身分判斷 (不論大小寫)
+        if (myRole && myRole.toLowerCase() === "teacher") {
             teacherBox.style.display = 'block'; 
-            document.getElementById('levelSelect').value = currentStudent.level.replace("K", "");
+            if (levelSelect) {
+                // 如果 HTML value 是 "1" 而不是 "K1"，這裡幫您處理
+                levelSelect.value = myLevel.replace("K", "");
+            }
         } else {
             teacherBox.style.display = 'none';
         }
@@ -163,6 +182,7 @@
 
         document.getElementById('bookImg').src = book.imageUrl || "";
 
+        // 更新單字區
         const wordArea = document.getElementById('wordList');
         wordArea.innerHTML = book.words ? "<p style='font-size:12px; color:#999; margin:5px 0;'>Words:</p>" : "";
         if (book.words) {
@@ -181,6 +201,7 @@
             });
         }
 
+        // 更新句子區
         const sentArea = document.getElementById('sentenceList');
         sentArea.innerHTML = book.sentences ? "<p style='font-size:12px; color:#999; margin:5px 0;'>Sentences:</p>" : "";
         if (book.sentences) {
