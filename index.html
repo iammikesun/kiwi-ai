@@ -92,7 +92,7 @@
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbxFo56z0Cz_yTiEjTv5Z6jwAaccwbC6z0-ipJ_F46FRUy46KQflGYH0f_z1WxBznq0/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxZNL9g0B1WPn3a8Ryx6lw2TjWTGXkBgoAktonXekNEHwwOyUnD2ec23tm75o0UdoY0/exec";
 
     let currentStudent = null;
     let currentTextbook = null;
@@ -201,22 +201,17 @@
         }
     }
 function playTeacherAudio(type) {
-    // type 可能是 'word' 或 'sent'
-    const url = (type === 'word') ? currentTextbook.wordAudio : currentTextbook.sentAudio;
-    
-    if (url && url.includes("google.com")) {
-        // 🚀 情況 A：網址包含 google，代表抓到了雲端硬碟的原音檔
-        console.log(`🎵 正在播放：【老師原音】(${type})`);
-        console.log("音檔路徑:", url);
-        const audio = new Audio(url);
-        audio.play();
-    } else {
-        // 🚀 情況 B：沒有網址，或是網址不對，啟動 TTS
-        const text = (type === 'word') ? currentTextbook.words : currentTextbook.sentences;
-        console.log(`🤖 正在播放：【Kiwi AI 合成音】(${type})`);
-        console.log("語音內容:", text);
-        speakText(text); // 呼叫您原本的 TTS 函式
-    }
+  const audioData = (type === 'word') ? currentTextbook.wordAudio : currentTextbook.sentAudio;
+  
+  // 檢查字串是否以 data:audio 開頭（代表它是成功的 Base64 字串）
+  if (typeof audioData === 'string' && audioData.startsWith("data:audio")) {
+      console.log("✅ 成功識別 Base64 音檔字串，準備播放");
+      const audio = new Audio(audioData);
+      audio.play().catch(e => console.error("播放失敗:", e));
+  } else {
+      console.log("⚠️ 找不到音檔字串，切換至 AI 語音 (TTS)");
+      speakText((type === 'word') ? currentTextbook.words : currentTextbook.sentences);
+  }
 }
     function playSpecificAudio(url, backupText) {
         if (url && url !== "NONE" && url.startsWith("http")) {
