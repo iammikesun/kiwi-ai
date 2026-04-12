@@ -202,7 +202,7 @@
     }
 function playTeacherAudio(type) {
   const audioData = (type === 'word') ? currentTextbook.wordAudio : currentTextbook.sentAudio;
-  
+  console.log("音檔字串長度:", audioData ? audioData.length : 0);
   // 檢查字串是否以 data:audio 開頭（代表它是成功的 Base64 字串）
   if (typeof audioData === 'string' && audioData.startsWith("data:audio")) {
       console.log("✅ 成功識別 Base64 音檔字串，準備播放");
