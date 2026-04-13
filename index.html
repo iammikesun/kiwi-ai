@@ -105,7 +105,7 @@
 </div>
 
 <script>
-    const GAS_URL = "https://script.google.com/macros/s/AKfycbwMPIY4zttdsnBD59KhxbUZfm8W-jyVfnlttaZAvffbN6oSFO27YP0FAzWgoYyfLXRC/exec";
+    const GAS_URL = "https://script.google.com/macros/s/AKfycbxHbd8Mac2i5J0dl4-SZDxvTlhbXpEohn4dSBup0O2FoIVTSKBeotQAk-6F7hxtEag9/exec";
 
     let currentStudent = null;
     let currentTextbook = null;
@@ -165,14 +165,19 @@ function showMain() {
 
         // 🚀 --- 修改這裡：只更新變數，不要觸發事件 ---
         // 這樣就不會回頭去跑 changeUnit，也就不會造成無限迴圈
+        // 🚀 修改後的版本：確保 level 也被同步進去
         currentTextbook = {
-            ...currentTextbook, // 保留原本的其他資訊 (如 role, name)
+            ...currentTextbook, 
+            level: myLevel,      // 👈 關鍵：一定要存入目前的 Level (例如 K4 或 K7)
             unit: book.unit,
             page: book.page,
             words: book.words,
+            sentences: book.sentences, // 建議連句型也一起同步
             aiScript: book.aiScript || "" 
         };
-        console.log("✅ 教材變數已手動同步，目前:", book.unit, book.page);
+        
+        // 修改 Log，讓你一眼看出 Level 有沒有跑掉
+        console.log(`✅ 教材變數同步成功 | 等級: ${myLevel} | 單元: ${book.unit} | 頁碼: ${book.page}`);
     }
 
     function renderList(elemId, data, audios, className, splitChar) {
@@ -298,193 +303,137 @@ function showMain() {
     }
 
  // 🚀 修改 toggleRecognition
-    function toggleRecognition() {
-        const btn = document.getElementById('mainBtn');
-        
-        // 每次點擊開始前，重置自動停止旗標
-        recognition.isAutoStop = false;
+    // ==========================================
+// 1. 控制開關 (Toggle)
+// ==========================================
+function toggleRecognition() {
+    const btn = document.getElementById('mainBtn');
+    recognition.isAutoStop = false; // 重置旗標
 
-        if (btn.innerText.includes("STOP")) {
-            stopSilenceTimer();
-            recognition.stop();
-            updateMicUI('processing');
-            return;
-        }
-        try {
-            document.getElementById('student-speech-bubble').style.display = 'none';
-            recognition.start();
-            updateMicUI('listening');
-            startSilenceTimer(); 
-        } catch (e) { 
-            recognition.stop();
-            setTimeout(() => { recognition.start(); updateMicUI('listening'); }, 200);
-        }
+    if (btn.innerText.includes("STOP")) {
+        stopSilenceTimer();
+        recognition.stop();
+        updateMicUI('processing');
+        return;
     }
+    try {
+        document.getElementById('student-speech-bubble').style.display = 'none';
+        recognition.start();
+        updateMicUI('listening');
+        startSilenceTimer(); 
+    } catch (e) { 
+        recognition.stop();
+        setTimeout(() => { 
+            recognition.start(); 
+            updateMicUI('listening'); 
+        }, 200);
+    }
+}
 
-    // 當學生一說話，立刻清除自動停止旗標
-    recognition.onsoundstart = () => {
-        console.log("🔊 偵測到聲音，取消 5 秒自動停止");
-        recognition.isAutoStop = false; 
-        stopSilenceTimer();
-    };
+// ==========================================
+// 2. 語音偵測事件
+// ==========================================
+recognition.onsoundstart = () => {
+    console.log("🔊 偵測到聲音，取消 5 秒自動停止");
+    recognition.isAutoStop = false; 
+    stopSilenceTimer();
+};
 
-    // 🚀 關鍵：只要學生「開始說話」，就取消 5 秒自動停止
-    recognition.onsoundstart = () => {
-        console.log("🔊 偵測到聲音，取消 5 秒自動停止");
-        stopSilenceTimer();
-    };
+recognition.onspeechend = () => { 
+    stopSilenceTimer();
+    recognition.stop(); 
+};
 
-   recognition.onresult = async (event) => {
-        const transcript = event.results[0][0].transcript;
-        console.log("✅ 辨識成功:", transcript);
+recognition.onerror = (event) => {
+    stopSilenceTimer();
+    console.error("Recognition Error:", event.error);
+    if (event.error === 'no-speech') {
+        updateMicUI('no-speech');
+    } else {
+        updateMicUI('ready');
+        document.getElementById('status-msg').innerText = "Mic Error: " + event.error;
+    }
+};
+
+// ==========================================
+// 3. 核心邏輯：辨識成功並送往 GAS (已修正重複與 K5 問題)
+// ==========================================
+recognition.onresult = async (event) => {
+    const transcript = event.results[0][0].transcript;
+    console.log("✅ 辨識成功:", transcript);
+    
+    // 顯示學生說話氣泡
+    document.getElementById('speech-text').innerText = transcript;
+    document.getElementById('student-speech-bubble').style.display = 'block';
+
+    updateMicUI('processing');
+
+    // 🚀 [關鍵] 強制從選單抓取最新的 Level/Unit/Page，避免抓到舊變數
+    const levelVal = document.getElementById('levelSelect').value;
+    const lessonVal = document.getElementById('lessonSelect').value;
+    const [u, p] = lessonVal ? lessonVal.split('|') : ["", ""];
+    const finalLevel = "K" + levelVal;
+
+    const params = new URLSearchParams({
+        action: "processSpeech",
+        speech: transcript,
+        target: currentTarget || "Hello",
+        name: currentStudent.name,
+        phone: currentStudent.phone,
+        level: finalLevel,
+        unit: u,
+        page: p
+    });
+
+    console.log(`📡 準備送往 GAS: ${finalLevel} | ${u} | ${p}`);
+
+    try {
+        const resp = await fetch(`${GAS_URL}?${params.toString()}`);
+        const res = await resp.json();
         
-        // 顯示學生說話氣泡
-        const bubble = document.getElementById('student-speech-bubble');
-        document.getElementById('speech-text').innerText = transcript;
-        bubble.style.display = 'block';
-
-        updateMicUI('processing');
-
-        const params = new URLSearchParams({
-            action: "processSpeech",
-            speech: transcript,
-            target: currentTarget || "Hello",
-            name: currentStudent.name,
-            phone: currentStudent.phone,
-            unit: currentTextbook.unit || "",
-            page: currentTextbook.page || ""
-        });
-
-        try {
-            const resp = await fetch(`${GAS_URL}?${params.toString()}`);
-            const res = await resp.json();
+        // --- Debug 監控輸出 ---
+        console.log("======= Kiwi 後端自白 =======");
+        if (res.debugFromGAS) {
+            console.log("1. 查表狀態:", res.debugFromGAS.status);
+            console.log("2. 參數對齊:", JSON.stringify(res.debugFromGAS.received_params));
+            console.log("3. 教材 D 欄 (Words):", res.debugFromGAS.what_GAS_saw.words);
             
-            // 🚀 【新增 Debug 監控輸出】
-            console.log("======= Kiwi 後端自白 =======");
-            if (res.debugFromGAS) {
-                console.log("1. 查表狀態:", res.debugFromGAS.status);
-                console.log("2. 參數對齊:", JSON.stringify(res.debugFromGAS.received_params));
-                console.log("3. 後端抓到的資料包:", res.debugFromGAS.what_GAS_saw);
-                
-                // 如果抓不到，直接在網頁標題顯示警告，讓您不用開 Console 也能發現
-                if (res.debugFromGAS.status.includes("❌")) {
-                   document.getElementById('feedback').innerHTML = "<b style='color:red;'>[系統警告] 後端找不到此課資料，請檢查單元名稱！</b>";
-                }
-            } else {
-                console.warn("⚠️ 注意：GAS 回傳資料中沒有 debugFromGAS 欄位，請確認 GAS 是否已部署最新版本。");
+            if (res.debugFromGAS.status.includes("❌")) {
+               document.getElementById('feedback').innerHTML = "<b style='color:red;'>[系統警告] 後端找不到此課資料！</b>";
             }
-            console.log("============================");
+        }
+        console.log("============================");
 
-            const ai = res.data || res; 
+        const ai = res.data || res; 
 
-            if (ai.feedback) {
-                // 顯示 AI 回饋（換行顯示）
-                document.getElementById('feedback').innerText = ai.feedback + (ai.translation ? "\n(" + ai.translation + ")" : "");
-                // 🚀 這裡開始加星星邏輯
-                console.log("🌟 準備顯示分數:", ai.score); // 👈 檢查 Console 看有沒有印出分數
-                const score = parseInt(ai.score) || 0; // 確保分數是數字
-                const stars = "⭐".repeat(score) + "☆".repeat(Math.max(0, 5 - score));
-                document.getElementById('star-rating').innerHTML = stars;
-                // ----------------------
-                if (ai.score >= 4) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-                
-                if (ai.audio) {
-                    const audio = new Audio("data:audio/mp3;base64," + ai.audio);
-                    audio.play().catch(e => console.error("Audio error", e));
-                }
+        if (ai.feedback) {
+            // A. 顯示評語與翻譯
+            document.getElementById('feedback').innerText = ai.feedback + (ai.translation ? "\n(" + ai.translation + ")" : "");
+            
+            // B. 顯示星星評分
+            const score = parseInt(ai.score) || 0;
+            const starRatingEl = document.getElementById('star-rating');
+            if (starRatingEl) {
+                starRatingEl.innerHTML = "⭐".repeat(score) + "☆".repeat(Math.max(0, 5 - score));
             }
-        } catch (e) {
-            console.error("Fetch error:", e);
-            document.getElementById('feedback').innerText = "Kiwi teacher is a bit sleepy. Try again!";
-        }
-        updateMicUI('ready');
-    };
 
-    recognition.onerror = (event) => {
-        stopSilenceTimer(); // 出錯也要關掉計時器
-        console.error("Recognition Error:", event.error);
-        if (event.error === 'no-speech') {
-            updateMicUI('no-speech');
-        } else {
-            updateMicUI('ready');
-        }
-    };
-
-    recognition.onspeechend = () => { 
-        stopSilenceTimer(); 
-        recognition.stop(); 
-    };
-
-    recognition.onresult = async (event) => {
-        const transcript = event.results[0][0].transcript;
-        console.log("✅ 辨識成功:", transcript);
-        
-      
-        // 顯示學生說話氣泡
-        const bubble = document.getElementById('student-speech-bubble');
-        document.getElementById('speech-text').innerText = transcript;
-        bubble.style.display = 'block';
-
-        updateMicUI('processing');
-
-        const params = new URLSearchParams({
-            action: "processSpeech",
-            speech: transcript,
-            target: currentTarget || "Hello",
-            name: currentStudent.name,
-            phone: currentStudent.phone,
-            unit: currentTextbook.unit || "",
-            page: currentTextbook.page || ""
-        });
-
-     try {
-            const resp = await fetch(`${GAS_URL}?${params.toString()}`);
-            const res = await resp.json();
-            const ai = res.data || res; 
-
-            console.log("📊 GAS 看到的教材 D 欄：", res.debugFromGAS.what_GAS_saw.words);
-            console.log("📊 GAS 看到的教材 G 欄：", res.debugFromGAS.what_GAS_saw.aiScript);
-            console.log("📊 查詢狀態：", res.debugFromGAS.status);
-
-            if (ai.feedback) {
-                // 1. 顯示評語
-                document.getElementById('feedback').innerText = ai.feedback + (ai.translation ? "\n(" + ai.translation + ")" : "");
-                
-                // 🚀 2. 顯示星星 (新增這一段)
-                const score = parseInt(ai.score) || 0;
-                const starRatingEl = document.getElementById('star-rating');
-                if (starRatingEl) {
-                    starRatingEl.innerHTML = "⭐".repeat(score) + "☆".repeat(Math.max(0, 5 - score));
-                }
-
-                // 3. 撒花
-                if (score >= 4) confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
-
-                // 4. 播放語音
-                if (ai.audio) {
-                    const audio = new Audio("data:audio/mp3;base64," + ai.audio);
-                    audio.play().catch(e => console.error("Audio error", e));
-                }
+            // C. 滿分 4-5 星撒花
+            if (score >= 4) {
+                confetti({ particleCount: 150, spread: 70, origin: { y: 0.6 } });
             }
-        } catch (e) {
-            console.error("Fetch error:", e);
-            document.getElementById('feedback').innerText = "Kiwi teacher is a bit sleepy. Try again!";
+            
+            // D. 播放 AI 語音
+            if (ai.audio) {
+                const audio = new Audio("data:audio/mp3;base64," + ai.audio);
+                audio.play().catch(e => console.error("Audio error", e));
+            }
         }
-        updateMicUI('ready');
-    };
-
-    recognition.onerror = (event) => {
-        console.error("Recognition Error:", event.error);
-        if (event.error === 'no-speech') {
-            updateMicUI('no-speech');
-        } else {
-            updateMicUI('ready');
-            document.getElementById('status-msg').innerText = "Mic Error: " + event.error;
-        }
-    };
-
-    recognition.onspeechend = () => { recognition.stop(); };
-
+    } catch (e) {
+        console.error("Fetch error:", e);
+        document.getElementById('feedback').innerText = "Kiwi teacher is a bit sleepy. Try again!";
+    }
+    updateMicUI('ready');
+};
     // --- 單元切換 ---
     async function changeUnit(isLevelChange = false) {
         const lessonSelect = document.getElementById('lessonSelect');
